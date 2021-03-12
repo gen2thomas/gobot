@@ -283,6 +283,7 @@ drivers provided using the `gobot/drivers/i2c` package:
 	- MMA7660 3-Axis Accelerometer
 	- MPL115A2 Barometer
 	- MPU6050 Accelerometer/Gyroscope
+	- PCA9501 8-bit I/O port with interrupt, 2-kbit EEPROM
 	- PCA9685 16-channel 12-bit PWM/Servo Driver
 	- SHT2x Temperature/Humidity
 	- SHT3x-D Temperature/Humidity

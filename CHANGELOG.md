@@ -14,6 +14,7 @@
 * **i2c**
     * add SHT2x device
     * add BMP388 Barometric Pressure/Temperature/Altitude Sensor
+    * add PCA9501 8-bit I/O port with interrupt, 2-kbit EEPROM
 * **pwm**
     * Resolve issue with PWM for PWMWrite
 * **mqtt**

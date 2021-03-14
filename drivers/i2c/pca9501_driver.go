@@ -1,6 +1,7 @@
 package i2c
 
 import (
+	"fmt"
 	"gobot.io/x/gobot"
 	"log"
 )
@@ -8,10 +9,15 @@ import (
 // PCA9501 supports addresses from 0x00 to 0x7F
 // 0x00 - 0x3F: GPIO
 // 0x40 - 0x7F: EEPROM
-// 0x04 GPIO, 0x44 is EEPROM
-const pca9501Address = 0x04
+// Example: 0x04 GPIO, 0x44 is EEPROM
+const pca9501AddressGPIO = 0x04
 
-// PCA9501Driver is a Gobot Driver for the PCA9501 8-bit GPIO  & 2kbit EEPROM with 6 address program pins.
+// Set bit 0x40 in connection address will activate EEPROM access
+const pca9501AddressMem = pca9501AddressGPIO | 0x40
+
+var pca9501Debug = false // will be more verbose when set to true
+
+// PCA9501Driver is a Gobot Driver for the PCA9501 8-bit GPIO  & 2-kbit EEPROM with 6 address program pins.
 // 0 EE A5 A4 A3 A2 A1 A0|rd
 // Lowest bit (rd) is mapped to switch between write(0)/read(1), it is not part of the "real" address.
 // Highest bit (EE) is mapped to switch between GPIO(0)/EEPROM(1).
@@ -19,10 +25,13 @@ const pca9501Address = 0x04
 // Example: A1,A2=1, others are 0
 // Address mask => 1000110|1 => real 7-bit address mask 0100 0110 = 0x46
 //
+// 2-kbit EEPROM has 250 byte, means addresses between 0x00-0xFA
+//
 type PCA9501Driver struct {
-	name       string
-	connector  Connector
-	connection Connection
+	name           string
+	connector      Connector
+	connectionGPIO Connection
+	connectionMem  Connection
 	Config
 	gobot.Commander
 }
@@ -75,9 +84,13 @@ func (p *PCA9501Driver) Connection() gobot.Connection { return p.connector.(gobo
 // Start initializes the pca9501
 func (p *PCA9501Driver) Start() (err error) {
 	bus := p.GetBusOrDefault(p.connector.GetDefaultBus())
-	address := p.GetAddressOrDefault(pca9501Address)
-
-	p.connection, err = p.connector.GetConnection(address, bus)
+	addressGPIO := p.GetAddressOrDefault(pca9501AddressGPIO)
+	p.connectionGPIO, err = p.connector.GetConnection(addressGPIO, bus)
+	if err != nil {
+		return err
+	}
+	addressMem := p.GetAddressOrDefault(pca9501AddressMem)
+	p.connectionMem, err = p.connector.GetConnection(addressMem, bus)
 	if err != nil {
 		return err
 	}
@@ -90,32 +103,32 @@ func (p *PCA9501Driver) Halt() (err error) { return }
 
 // WriteGPIO writes a value to a gpio pin (0-7)
 func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
-	// read current value of CTRL register
+	// read current value of CTRL register, 0 is no output, 1 is an output
 	iodir, err := p.read()
 	if err != nil {
 		return err
 	}
 	// set pin as output by clearing bit
 	iodirVal := clearBitAtPos(iodir, uint8(pin))
-	// write CTRL register bit
-	err = p.write(uint8(pin), uint8(iodirVal))
+	// write CTRL register
+	err = p.write(uint8(iodirVal))
 	if err != nil {
 		return err
 	}
-	// read current value
+	// read current value of port
 	cVal, err := p.read()
 	if err != nil {
 		return err
 	}
-	// set or clear value, 0 is no output, 1 is an output
+	// set or reset the bit in value
 	var nVal uint8
 	if val == 0 {
 		nVal = clearBitAtPos(cVal, uint8(pin))
 	} else {
 		nVal = setBitAtPos(cVal, uint8(pin))
 	}
-	// write bit
-	err = p.write(uint8(pin), uint8(nVal))
+	// write new value to port
+	err = p.write(uint8(nVal))
 	if err != nil {
 		return err
 	}
@@ -124,19 +137,19 @@ func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 
 // ReadGPIO reads a value from a given gpio pin (0-7)
 func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
-	// read current value of CTRL register
+	// read current value of CTRL register, 0 is no output, 1 is an output
 	iodir, err := p.read()
 	if err != nil {
 		return 0, err
 	}
 	// set pin as input by setting bit
 	iodirVal := setBitAtPos(iodir, uint8(pin))
-	// write CTRL register bit
-	err = p.write(uint8(pin), uint8(iodirVal))
+	// write CTRL register
+	err = p.write(uint8(iodirVal))
 	if err != nil {
 		return 0, err
 	}
-	// read value
+	// read port and create return bit
 	val, err = p.read()
 	if err != nil {
 		return val, err
@@ -148,22 +161,59 @@ func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 	return val, nil
 }
 
-// write gets the value of the passed in register, and then overwrites
-// the bit specified by the pin, with the given value.
-func (p *PCA9501Driver) write(pin uint8, val uint8) (err error) {
-	if debug {
-		log.Printf("write: PCA9501 address: 0x%X, value: 0x%X\n", p.GetAddressOrDefault(pca9501Address), val)
+// ReadEEPROM reads a value from a given address (00-FA)
+func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
+	// write EEPROM address to read from
+	err = p.writemem(uint8(address))
+	if err != nil {
+		return 0, err
 	}
-	if _, err = p.connection.Write([]uint8{val}); err != nil {
+	// read value
+	val, err = p.readmem()
+	return val, err
+}
+
+// WriteEEPROM writes a value to a given address im memory (00-FA)
+func (p *PCA9501Driver) WriteEEPROM(address uint8, val uint8) (err error) {
+	// write EEPROM address to write to
+	err = p.writemem(uint8(address))
+	if err != nil {
+		return err
+	}
+	// write new value to port
+	err = p.writemem(uint8(val))
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// read get the data from a given register
+// write the given value to the GPIO connection
+func (p *PCA9501Driver) write(val uint8) (err error) {
+	if pca9501Debug {
+		log.Printf("write: PCA9501 address: 0x%X, value: 0x%X\n", p.GetAddressOrDefault(pca9501AddressGPIO), val)
+	}
+	if _, err = p.connectionGPIO.Write([]uint8{val}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// write the given value to the memory connection
+func (p *PCA9501Driver) writemem(val uint8) (err error) {
+	if pca9501Debug {
+		log.Printf("write: PCA9501 address: 0x%X, value: 0x%X\n", p.GetAddressOrDefault(pca9501AddressMem), val)
+	}
+	if _, err = p.connectionMem.Write([]uint8{val}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// read get the value from the GPIO connection
 func (p *PCA9501Driver) read() (val uint8, err error) {
 	buf := []byte{0}
-	bytesRead, err := p.connection.Read(buf)
+	bytesRead, err := p.connectionGPIO.Read(buf)
 	if err != nil {
 		return val, err
 	}
@@ -171,8 +221,25 @@ func (p *PCA9501Driver) read() (val uint8, err error) {
 		err = ErrNotEnoughBytes
 		return
 	}
-	if debug {
-		log.Printf("reading: PCA9501 address: 0x%X, value: 0x%X\n", p.GetAddressOrDefault(pca9501Address), buf)
+	if pca9501Debug {
+		log.Printf("reading: PCA9501 address: 0x%X, value: 0x%X\n", p.GetAddressOrDefault(pca9501AddressGPIO), buf)
+	}
+	return buf[0], nil
+}
+
+// read get the value from the memory connection
+func (p *PCA9501Driver) readmem() (val uint8, err error) {
+	buf := []byte{0}
+	bytesRead, err := p.connectionMem.Read(buf)
+	if err != nil {
+		return val, err
+	}
+	if bytesRead != 1 {
+		err = ErrNotEnoughBytes
+		return
+	}
+	if pca9501Debug {
+		log.Printf("reading: PCA9501 address: 0x%X, value: 0x%X\n", p.GetAddressOrDefault(pca9501AddressMem), buf)
 	}
 	return buf[0], nil
 }

@@ -252,7 +252,3 @@ func clearBitAtPos(n uint8, pos uint8) uint8 {
 func (p *PCA9501Driver) getAddressMem(defaultAdress int) int {
 	return p.GetAddressOrDefault(defaultAdress) | 0x40
 }
-
-func (p *PCA9501Driver) getAddressGPIO(defaultAdress int) int {
-	return p.GetAddressOrDefault(defaultAdress) & 0x40
-}

@@ -18,7 +18,7 @@ const pca9501Address = 0x04
 // Example: A1,A2=1, others are 0
 // Address mask => 1000110|1 => real 7-bit address mask 0100 0110 = 0x46
 //
-// 2-kbit EEPROM has 250 byte, means addresses between 0x00-0xFA
+// 2-kbit EEPROM has 256 byte, means addresses between 0x00-0xFF
 //
 type PCA9501Driver struct {
 	name           string

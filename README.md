@@ -284,6 +284,7 @@ drivers provided using the `gobot/drivers/i2c` package:
 	- MPL115A2 Barometer
 	- MPU6050 Accelerometer/Gyroscope
 	- PCA9501 8-bit I/O port with interrupt, 2-kbit EEPROM
+	- PCA953x LED Dimmer for PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
 	- PCA9685 16-channel 12-bit PWM/Servo Driver
 	- SHT2x Temperature/Humidity
 	- SHT3x-D Temperature/Humidity

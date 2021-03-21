@@ -210,24 +210,20 @@ func TestPCA953xWriteRegister(t *testing.T) {
 	// arrange
 	const expectedRegAddress = PCA953xRegister(0x03)
 	const expectedRegVal = uint8(0x97)
-	const expectedByteCount = 1
+	const expectedByteCount = 2
 	var regAddress uint8
 	var regVal uint8
-	var bytesCountAddress int
-	var bytesCountVal int
+	var bytesCount int
 
 	pca, adaptor := initPCA953xTestDriver()
 	numCalls := 0
 	adaptor.i2cWriteImpl = func(b []byte) (int, error) {
 		numCalls++
 		if numCalls == 1 {
-			bytesCountAddress = len(b)
+			bytesCount = len(b)
 			regAddress = b[0]
-			return 0, nil
-		}
-		if numCalls == 2 {
-			bytesCountVal = len(b)
-			regVal = b[0]
+			regVal = b[1]
+
 			return 0, nil
 		}
 		return 0, errors.New("to much calls")
@@ -236,57 +232,11 @@ func TestPCA953xWriteRegister(t *testing.T) {
 	err := pca.writeRegister(expectedRegAddress, expectedRegVal)
 	// assert
 	gobottest.Assert(t, err, nil)
-	gobottest.Assert(t, numCalls, 2)
-	gobottest.Assert(t, bytesCountAddress, expectedByteCount)
-	gobottest.Assert(t, bytesCountVal, expectedByteCount)
+	gobottest.Assert(t, numCalls, 1)
+	gobottest.Assert(t, bytesCount, expectedByteCount)
 	gobottest.Assert(t, regAddress, uint8(expectedRegAddress))
 	gobottest.Assert(t, regVal, expectedRegVal)
 
-}
-
-func TestPCA953xWriteClearBit(t *testing.T) {
-	// arrange
-	pca, adaptor := initPCA953xTestDriver()
-	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		return len(b), nil
-	}
-	adaptor.i2cWriteImpl = func([]byte) (int, error) {
-		return 0, nil
-	}
-	// act
-	err := pca.write(uint8(0))
-	// assert
-	gobottest.Assert(t, err, nil)
-}
-
-func TestPCA953xWriteSetBit(t *testing.T) {
-	// arrange
-	pca, adaptor := initPCA953xTestDriver()
-	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		return len(b), nil
-	}
-	adaptor.i2cWriteImpl = func([]byte) (int, error) {
-		return 0, nil
-	}
-	// act
-	err := pca.write(uint8(7))
-	// assert
-	gobottest.Assert(t, err, nil)
-}
-
-func TestPCA953xWriteError(t *testing.T) {
-	// arrange
-	pca, adaptor := initPCA953xTestDriver()
-	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		return len(b), nil
-	}
-	adaptor.i2cWriteImpl = func([]byte) (int, error) {
-		return 0, errors.New("write error")
-	}
-	// act
-	err := pca.write(uint8(7))
-	// assert
-	gobottest.Assert(t, err, errors.New("write error"))
 }
 
 func TestPCA953xRead(t *testing.T) {

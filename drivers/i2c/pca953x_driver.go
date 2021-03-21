@@ -3,6 +3,7 @@ package i2c
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"gobot.io/x/gobot"
 )
@@ -134,6 +135,7 @@ func (p *PCA953xDriver) WriteGPIO(idx uint8, mode PCA953xGPIOMode) (err error) {
 	regLsVal |= uint8(mode) << regLsShift
 	// write new value
 	return p.writeRegister(regLs, regLsVal)
+	//return p.writeRegister(pca953xRegLs0, 0x02)
 }
 
 // ReadGPIO reads a gpio input (index 0-7) to a value
@@ -271,13 +273,14 @@ func pca953xCalcDutyCyclePercent(pwm uint8) float32 {
 func (p *PCA953xDriver) writeRegister(regAddress PCA953xRegister, val uint8) error {
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
-	// write CTRL register
-	err := p.write(uint8(regAddress))
-	if err != nil {
-		return err
-	}
 	// write content of requested register
-	return p.write(val)
+	_, err := p.connection.Write([]byte{uint8(regAddress), val})
+	if err != nil {
+		// repeat
+		time.Sleep(20 * time.Millisecond)
+		_, err = p.connection.Write([]byte{uint8(regAddress), val})
+	}
+	return err
 }
 
 // read the content of the given register
@@ -285,18 +288,12 @@ func (p *PCA953xDriver) readRegister(regAddress PCA953xRegister) (uint8, error) 
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
 	// write CTRL register
-	err := p.write(uint8(regAddress))
+	_, err := p.connection.Write([]uint8{uint8(regAddress)})
 	if err != nil {
 		return 0, err
 	}
 	// read content of requested register
 	return p.read()
-}
-
-// write the value to the connection
-func (p *PCA953xDriver) write(val uint8) error {
-	_, err := p.connection.Write([]uint8{val})
-	return err
 }
 
 // read the value from the connection

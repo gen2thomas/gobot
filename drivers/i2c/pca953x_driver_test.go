@@ -69,6 +69,40 @@ func TestPCA953xHalt(t *testing.T) {
 	gobottest.Assert(t, pca.Halt(), nil)
 }
 
+func TestPCA953xReadGPIO(t *testing.T) {
+	// arrange
+	const expectedRegAddress = uint8(0x00) // input register
+	const expectedReadByteCount = 1
+	var regAddress uint8
+	var bytes int
+
+	pca, adaptor := initPCA953xTestDriver()
+	adaptor.i2cReadImpl = func(b []byte) (int, error) {
+		regAddress = b[0]
+		bytes = len(b)
+		return bytes, nil
+	}
+	// act
+	val, err := pca.ReadGPIO(2) // index doesn't matter
+	// assert
+	gobottest.Assert(t, err, nil)
+	gobottest.Assert(t, val, uint8(0))
+	gobottest.Assert(t, bytes, expectedReadByteCount)
+	gobottest.Assert(t, regAddress, expectedRegAddress)
+}
+
+func TestPCA953xReadGPIOErrorWhileRead(t *testing.T) {
+	// arrange
+	pca, adaptor := initPCA953xTestDriver()
+	adaptor.i2cReadImpl = func([]byte) (int, error) {
+		return 0, errors.New("error while read")
+	}
+	// act
+	_, err := pca.ReadGPIO(2) // index doesn't matter
+	// assert
+	gobottest.Assert(t, err, errors.New("error while read"))
+}
+
 func TestPCA953xReadRegister(t *testing.T) {
 	// arrange
 	const expectedRegAddress = uint8(3)
@@ -117,7 +151,7 @@ func TestPCA953xWriteRegister(t *testing.T) {
 			bytesCountVal = len(b)
 			regVal = b[0]
 			return 0, nil
-		}		
+		}
 		return 0, errors.New("to much calls")
 	}
 	// act

@@ -2,6 +2,7 @@ package i2c
 
 import (
 	"errors"
+	"fmt"
 
 	"gobot.io/x/gobot"
 )
@@ -9,15 +10,18 @@ import (
 // PCA953xAddress is set to variant PCA9533/2
 const PCA953xAddress = 0x63
 
+// PCA953xGPIOMode is used to set the mode while write GPIO
+type PCA953xRegister uint8
+
 // there are 6 registers
 const (
-	pca953xRegInp  = 0x00 // input register
-	pca953xRegPsc0 = 0x01 // r,   frequency prescaler 0
-	pca953xRegPwm0 = 0x02 // r/w, PWM register 0
-	pca953xRegPsc1 = 0x03 // r/w, frequency prescaler 1
-	pca953xRegPwm1 = 0x04 // r/w, PWM register 1
-	pca953xRegLs0  = 0x05 // r/w, LED selector 0
-	pca953xRegLs1  = 0x06 // r/w, LED selector 1 (only in PCA9531, PCA9532)
+	pca953xRegInp  PCA953xRegister = 0x00 // input register
+	pca953xRegPsc0                 = 0x01 // r,   frequency prescaler 0
+	pca953xRegPwm0                 = 0x02 // r/w, PWM register 0
+	pca953xRegPsc1                 = 0x03 // r/w, frequency prescaler 1
+	pca953xRegPwm1                 = 0x04 // r/w, PWM register 1
+	pca953xRegLs0                  = 0x05 // r/w, LED selector 0
+	pca953xRegLs1                  = 0x06 // r/w, LED selector 1 (only in PCA9531, PCA9532)
 )
 
 // autoincrement bit
@@ -38,6 +42,10 @@ const (
 )
 
 var ErrToMuchBytes = errors.New("To much bytes read")
+var ErrToSmallPeriod = errors.New("Given Period to small, must be at least 1/152s (~6.58ms) or 152Hz")
+var ErrToBigPeriod = errors.New("Given Period to high, must be max. 256/152s (~1.68s) or 152/256Hz (~0.6Hz)")
+var ErrToSmallDutyCycle = errors.New("Given Duty Cycle to small, must be at least 0%")
+var ErrToBigDutyCycle = errors.New("Given Duty Cycle to high, must be max. 100%")
 
 // PCA953x is a Gobot Driver for LED Dimmer PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
 // Although this is designed for LED's it can be used as a GPIO (read, write, pwm).
@@ -112,7 +120,7 @@ func (p *PCA953xDriver) Halt() (err error) { return }
 // WriteGPIO writes a value to a gpio output (index 0-7)
 func (p *PCA953xDriver) WriteGPIO(idx uint8, mode PCA953xGPIOMode) (err error) {
 	// prepare
-	var regLs uint8 = pca953xRegLs0
+	var regLs PCA953xRegister = pca953xRegLs0
 	if idx > 3 {
 		regLs = pca953xRegLs1
 		idx = idx - 4
@@ -143,48 +151,124 @@ func (p *PCA953xDriver) ReadGPIO(idx uint8) (uint8, error) {
 	return val, nil
 }
 
-// WritePsc0Register set the content of the frequency prescaler 0 (PSC0)
-func (p *PCA953xDriver) WritePsc0Register(val uint8) error {
-	return p.writeRegister(pca953xRegPsc0, val)
+// WritePeriod set the content of the frequency prescaler of the given index (0,1) with the given value in seconds
+func (p *PCA953xDriver) WritePeriod(idx uint8, valSec float32) error {
+	// period is valid in range ~6.58ms..1.68s
+	val, err := pca953xCalcPsc(valSec)
+	if err != nil {
+		fmt.Println(err, "value shrinked!")
+	}
+	var regPsc PCA953xRegister = pca953xRegPsc0
+	if idx > 0 {
+		regPsc = pca953xRegPsc1
+	}
+	return p.writeRegister(regPsc, val)
 }
 
-// WritePsc1Register set the content of the frequency prescaler 1 (PSC1)
-func (p *PCA953xDriver) WritePsc1Register(val uint8) error {
-	return p.writeRegister(pca953xRegPsc1, val)
+// Period get the frequency prescaler in seconds of the given index (0,1)
+func (p *PCA953xDriver) Period(idx uint8) (float32, error) {
+	var regPsc PCA953xRegister = pca953xRegPsc0
+	if idx > 0 {
+		regPsc = pca953xRegPsc1
+	}
+	psc, err := p.readRegister(regPsc)
+	if err != nil {
+		return -1, err
+	}
+	return pca953xCalcPeriod(psc), nil
 }
 
-// WritePwm0Register set the content of the pulse wide modulation (PWM0)
-func (p *PCA953xDriver) WritePwm0Register(val uint8) error {
-	return p.writeRegister(pca953xRegPwm0, val)
+// WriteFrequency set the content of the frequency prescaler of the given index (0,1) with the given value in Hz
+func (p *PCA953xDriver) WriteFrequency(idx uint8, valHz float32) error {
+	// frequency is valid in range ~0.6..152Hz
+	val, err := pca953xCalcPsc(1 / valHz)
+	if err != nil {
+		fmt.Println(err, "value shrinked!")
+	}
+	var regPsc PCA953xRegister = pca953xRegPsc0
+	if idx > 0 {
+		regPsc = pca953xRegPsc1
+	}
+	return p.writeRegister(regPsc, val)
 }
 
-// WritePwm1Register set the content of the pulse wide modulation (PWM1)
-func (p *PCA953xDriver) WritePwm1Register(val uint8) error {
-	return p.writeRegister(pca953xRegPwm1, val)
+// Frequency get the frequency prescaler in Hz of the given index (0,1)
+func (p *PCA953xDriver) Frequency(idx uint8) (float32, error) {
+	var regPsc PCA953xRegister = pca953xRegPsc0
+	if idx > 0 {
+		regPsc = pca953xRegPsc1
+	}
+	psc, err := p.readRegister(regPsc)
+	if err != nil {
+		return -1, err
+	}
+	// valHz = 1/valSec
+	return 1 / pca953xCalcPeriod(psc), nil
 }
 
-// Psc0Register get the content of the frequency prescaler 0 (PSC0)
-func (p *PCA953xDriver) Psc0Register() (uint8, error) {
-	return p.readRegister(pca953xRegPsc0)
+// WriteDutyCyclePercent set the PWM duty cycle of the given index (0,1) with the given value in percent
+func (p *PCA953xDriver) WriteDutyCyclePercent(idx uint8, valPercent float32) error {
+	val, err := pca953xCalcPwm(valPercent)
+	if err != nil {
+		fmt.Println(err, "value shrinked!")
+	}
+	var regPwm PCA953xRegister = pca953xRegPwm0
+	if idx > 0 {
+		regPwm = pca953xRegPwm1
+	}
+	return p.writeRegister(regPwm, val)
 }
 
-// Psc1Register get the content of the frequency prescaler 1 (PSC1)
-func (p *PCA953xDriver) Psc1Register() (uint8, error) {
-	return p.readRegister(pca953xRegPsc1)
+// DutyCyclePercent get the PWM duty cycle in percent of the given index (0,1)
+func (p *PCA953xDriver) DutyCyclePercent(idx uint8) (float32, error) {
+	var regPwm PCA953xRegister = pca953xRegPwm0
+	if idx > 0 {
+		regPwm = pca953xRegPwm1
+	}
+	pwm, err := p.readRegister(regPwm)
+	if err != nil {
+		return -1, err
+	}
+	// PWM=0..255
+	return pca953xCalcDutyCyclePercent(pwm), nil
 }
 
-// Pwm0Register get the content of the pulse wide modulation (PWM0)
-func (p *PCA953xDriver) Pwm0Register() (uint8, error) {
-	return p.readRegister(pca953xRegPwm0)
+func pca953xCalcPsc(valSec float32) (uint8, error) {
+	// valSec = (PSC+1)/152; (PSC=0..255)
+	psc := 152*valSec - 1
+	if psc < 0 {
+		return 0, ErrToSmallPeriod
+	}
+	if psc > 255 {
+		return 255, ErrToBigPeriod
+	}
+	// add 0.5 for better rounding experience
+	return uint8(psc + 0.5), nil
 }
 
-// Pwm1Register get the content of the pulse wide modulation (PWM1)
-func (p *PCA953xDriver) Pwm1Register() (uint8, error) {
-	return p.readRegister(pca953xRegPwm1)
+func pca953xCalcPeriod(psc uint8) float32 {
+	return (float32(psc) + 1) / 152
+}
+
+func pca953xCalcPwm(valPercent float32) (uint8, error) {
+	// valPercent = PWM/256*(256/255*100); (PWM=0..255)
+	pwm := 255 * valPercent / 100
+	if pwm < 0 {
+		return 0, ErrToSmallDutyCycle
+	}
+	if pwm > 255 {
+		return 255, ErrToBigDutyCycle
+	}
+	// add 0.5 for better rounding experience
+	return uint8(pwm + 0.5), nil
+}
+
+func pca953xCalcDutyCyclePercent(pwm uint8) float32 {
+	return 100 * float32(pwm) / 255
 }
 
 // write the content of the given register
-func (p *PCA953xDriver) writeRegister(regAddress uint8, val uint8) error {
+func (p *PCA953xDriver) writeRegister(regAddress PCA953xRegister, val uint8) error {
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
 	// write CTRL register
@@ -197,7 +281,7 @@ func (p *PCA953xDriver) writeRegister(regAddress uint8, val uint8) error {
 }
 
 // read the content of the given register
-func (p *PCA953xDriver) readRegister(regAddress uint8) (uint8, error) {
+func (p *PCA953xDriver) readRegister(regAddress PCA953xRegister) (uint8, error) {
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
 	// write CTRL register

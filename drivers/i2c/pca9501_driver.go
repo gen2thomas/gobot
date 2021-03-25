@@ -1,7 +1,10 @@
 package i2c
 
 import (
+	"errors"
+	"fmt"
 	"gobot.io/x/gobot"
+	"time"
 )
 
 // PCA9501 supports addresses from 0x00 to 0x7F
@@ -9,6 +12,14 @@ import (
 // 0x40 - 0x7F: EEPROM
 // Example: 0x04 GPIO, 0x44 is EEPROM
 const pca9501Address = 0x04
+
+// This EEPROM address (range 0x00-0xFF) is not usable for other meaningfull r/w-operations
+// Please read explanation at the end of this document
+const pca9501MemReadDummyAddress = 0xFF
+
+// Value does not matter, could be used to identify the dummy address, when unique
+// Please read explanation at the end of this document
+const pca9501MemReadDummyValue = 0x15
 
 // PCA9501Driver is a Gobot Driver for the PCA9501 8-bit GPIO  & 2-kbit EEPROM with 6 address program pins.
 // 0 EE A5 A4 A3 A2 A1 A0|rd
@@ -110,19 +121,19 @@ func (p *PCA9501Driver) Halt() (err error) { return }
 // WriteGPIO writes a value to a gpio pin (0-7)
 func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 	// read current value of CTRL register, 0 is no output, 1 is an output
-	iodir, err := p.read()
+	iodir, err := p.connectionGPIO.ReadByte()
 	if err != nil {
 		return err
 	}
 	// set pin as output by clearing bit
 	iodirVal := clearBitAtPos(iodir, uint8(pin))
 	// write CTRL register
-	err = p.write(uint8(iodirVal))
+	err = p.connectionGPIO.WriteByte(uint8(iodirVal))
 	if err != nil {
 		return err
 	}
 	// read current value of port
-	cVal, err := p.read()
+	cVal, err := p.connectionGPIO.ReadByte()
 	if err != nil {
 		return err
 	}
@@ -134,7 +145,7 @@ func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 		nVal = setBitAtPos(cVal, uint8(pin))
 	}
 	// write new value to port
-	err = p.write(uint8(nVal))
+	err = p.connectionGPIO.WriteByte(uint8(nVal))
 	if err != nil {
 		return err
 	}
@@ -144,19 +155,19 @@ func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 // ReadGPIO reads a value from a given gpio pin (0-7)
 func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 	// read current value of CTRL register, 0 is no output, 1 is an output
-	iodir, err := p.read()
+	iodir, err := p.connectionGPIO.ReadByte()
 	if err != nil {
 		return 0, err
 	}
 	// set pin as input by setting bit
 	iodirVal := setBitAtPos(iodir, uint8(pin))
 	// write CTRL register
-	err = p.write(uint8(iodirVal))
+	err = p.connectionGPIO.WriteByte(uint8(iodirVal))
 	if err != nil {
 		return 0, err
 	}
 	// read port and create return bit
-	val, err = p.read()
+	val, err = p.connectionGPIO.ReadByte()
 	if err != nil {
 		return val, err
 	}
@@ -167,75 +178,33 @@ func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 	return val, nil
 }
 
-// ReadEEPROM reads a value from a given address (00-FA)
+// ReadEEPROM reads a value from a given address (00-FF)
 func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
-	// write EEPROM address to read from
-	err = p.writemem(uint8(address))
-	if err != nil {
-		return 0, err
+	// Please read explanation at the end of this document to understand, why it is implemented in this way
+	if address == pca9501MemReadDummyAddress {
+		return pca9501MemReadDummyValue, errors.New(fmt.Sprintf("Dummy address %d not meaningfull to read\n", pca9501MemReadDummyAddress))
 	}
-	// read value
-	val, err = p.readmem()
-	return val, err
+	// write dummy value to set the address counter to n
+	err = p.connectionMem.WriteByteData(pca9501MemReadDummyAddress, pca9501MemReadDummyValue)
+	if err != nil {
+		return val, err
+	}
+	time.Sleep(10 * time.Millisecond)
+	// read all addresses, starting with n+1
+	buf := make([]uint8, 255)
+	_, err = p.connectionMem.Read(buf)
+	if err != nil {
+		return val, err
+	}
+	return buf[address-1-pca9501MemReadDummyAddress], err
 }
 
-// WriteEEPROM writes a value to a given address im memory (00-FA)
+// WriteEEPROM writes a value to a given address in memory (0x00-0xFF)
 func (p *PCA9501Driver) WriteEEPROM(address uint8, val uint8) (err error) {
-	// write EEPROM address to write to
-	err = p.writemem(uint8(address))
-	if err != nil {
-		return err
+	if address == pca9501MemReadDummyAddress {
+		return errors.New(fmt.Sprintf("Dummy address %d not meaningfull to write\n", pca9501MemReadDummyAddress))
 	}
-	// write new value to port
-	err = p.writemem(uint8(val))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// write the given value to the GPIO connection
-func (p *PCA9501Driver) write(val uint8) (err error) {
-	if _, err = p.connectionGPIO.Write([]uint8{val}); err != nil {
-		return err
-	}
-	return nil
-}
-
-// write the given value to the memory connection
-func (p *PCA9501Driver) writemem(val uint8) (err error) {
-	if _, err = p.connectionMem.Write([]uint8{val}); err != nil {
-		return err
-	}
-	return nil
-}
-
-// read get the value from the GPIO connection
-func (p *PCA9501Driver) read() (val uint8, err error) {
-	buf := []byte{0}
-	bytesRead, err := p.connectionGPIO.Read(buf)
-	if err != nil {
-		return val, err
-	}
-	if bytesRead != 1 {
-		err = ErrNotEnoughBytes
-		return
-	}
-	return buf[0], nil
-}
-
-// read get the value from the memory connection
-func (p *PCA9501Driver) readmem() (val uint8, err error) {
-	buf := []byte{0}
-	bytesRead, err := p.connectionMem.Read(buf)
-	if err != nil {
-		return val, err
-	}
-	if bytesRead != 1 {
-		err = ErrNotEnoughBytes
-		return
-	}
-	return buf[0], nil
+	return p.connectionMem.WriteByteData(address, val)
 }
 
 func setBitAtPos(n uint8, pos uint8) uint8 {
@@ -252,3 +221,40 @@ func clearBitAtPos(n uint8, pos uint8) uint8 {
 func (p *PCA9501Driver) getAddressMem(defaultAdress int) int {
 	return p.GetAddressOrDefault(defaultAdress) | 0x40
 }
+
+// Explanation for EEPROM read possibilities of PCA9501 and ristrictions with adaptor implementations
+// PCA9501 has an internal address counter "n" and supports 3 EEPROM read methodes
+// * read value of position "n" (current address read)
+// * set address counter "n" by a write-counter-operation, then read (random address read)
+// * read all 255 bytes, starting with "n" (sequential read)
+//
+// for further reading:
+// * STARTW - Start condition with device address and write
+// * STARTR - Start condition with device address and read
+//
+// The most usable feature seems to be the "random address read":
+// According to specification we have to implement a sequence of "STARTW-DATA1-STARTR-DATA2-STOP"
+// DATA1: EEPROM-address to set (will set "n"), DATA2: value at "n" read
+// This sequence (with missing STOP after DATA1) is not supported by (some) implementations of gobot adaptors.
+//
+// Some words to "current address read":
+// After an reset of device ("n" should be 0) and some write operations the current address "n" is unknown, except
+// we would have an local counter reflecting the state of "n". The device don't provide "n" in any way.
+// Therefore "current address read" is hard to implement in a safe way.
+//
+// Using "sequential read" to fullfill gobot adaptors implementations and provide a "pseudo random read":
+// After a write operation to the address "n" the counter will be incremented to "n+1". So, it will be always possible
+// to read, which will return the value of address "n+1" (see "current address read").
+// To make our own "pseudo random read", we have to use a dummy address to write to and afterwards read complete
+// memory to a buffer. Because we know "n" at the moment of writing, we can match all buffer elements to a EEPROM address
+//
+// For this make to work there are 2 additional constants defined
+//
+// "pca9501MemReadDummyAddress":
+// We have to use an dummy write (start-write-stop) to this address to set the EEPROM address
+// counter "n" for sequential read (start-read-stop) afterwards, beginning at "n+1"
+// It is possible to use each address in range 0x00-0xFF for dummy write, this also means
+// the chosen EEPROM address is not usable for other meaningfull r/w-operations!
+//
+// "pca9501MemReadDummyValue"
+// Value does not matter, could be used to identify the dummy address, when unique in your application.

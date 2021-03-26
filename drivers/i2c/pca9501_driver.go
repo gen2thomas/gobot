@@ -13,9 +13,9 @@ import (
 // Example: 0x04 GPIO, 0x44 is EEPROM
 const pca9501Address = 0x04
 
-// This EEPROM address (range 0x00-0xFF) is not usable for other meaningfull r/w-operations
+// This EEPROM address (range 0x00-0xFE) is not usable for other meaningfull r/w-operations
 // Please read explanation at the end of this document
-const pca9501MemReadDummyAddress = 0xFF
+const pca9501MemReadDummyAddress = 0x00
 
 // Value does not matter, could be used to identify the dummy address, when unique
 // Please read explanation at the end of this document
@@ -178,7 +178,7 @@ func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 	return val, nil
 }
 
-// ReadEEPROM reads a value from a given address (00-FF)
+// ReadEEPROM reads a value from a given address (0x00-0xFF)
 func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
 	// Please read explanation at the end of this document to understand, why it is implemented in this way
 	if address == pca9501MemReadDummyAddress {
@@ -253,8 +253,9 @@ func (p *PCA9501Driver) getAddressMem(defaultAdress int) int {
 // "pca9501MemReadDummyAddress":
 // We have to use an dummy write (start-write-stop) to this address to set the EEPROM address
 // counter "n" for sequential read (start-read-stop) afterwards, beginning at "n+1"
-// It is possible to use each address in range 0x00-0xFF for dummy write, this also means
+// It is possible to use each address in range 0x00-0xFE for dummy write, this also means
 // the chosen EEPROM address is not usable for other meaningfull r/w-operations!
+// Please note that 0xFF will not work for unknown reason.
 //
 // "pca9501MemReadDummyValue"
 // Value does not matter, could be used to identify the dummy address, when unique in your application.

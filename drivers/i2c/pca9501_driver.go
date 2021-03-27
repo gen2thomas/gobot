@@ -20,7 +20,7 @@ const pca9501MemReadDummyAddress = 0x00
 // Please read explanation at the end of this document
 const pca9501MemReadDummyValue = 0x15
 
-// PCA9501Driver is a Gobot Driver for the PCA9501 8-bit GPIO  & 2-kbit EEPROM with 6 address program pins.
+// PCA9501Driver is a Gobot Driver for the PCA9501 8-bit GPIO & 2-kbit EEPROM with 6 address program pins.
 // 0 EE A5 A4 A3 A2 A1 A0|rd
 // Lowest bit (rd) is mapped to switch between write(0)/read(1), it is not part of the "real" address.
 // Highest bit (EE) is mapped to switch between GPIO(0)/EEPROM(1).
@@ -29,6 +29,8 @@ const pca9501MemReadDummyValue = 0x15
 // Address mask => 1000110|1 => real 7-bit address mask 0100 0110 = 0x46
 //
 // 2-kbit EEPROM has 256 byte, means addresses between 0x00-0xFF
+//
+// PCA9501 is the replacement for PCF8574, so this driver should also work for PCF8574 except EEPROM calls
 //
 type PCA9501Driver struct {
 	name           string

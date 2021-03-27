@@ -130,32 +130,98 @@ func TestPCA9501DriverCommandsReadEEPROM(t *testing.T) {
 
 func TestPCA9501DriverWriteGPIOClearBit(t *testing.T) {
 	// arrange
+	pinUnderTest := uint8(6)
 	pca, adaptor := initPCA9501TestDriver()
+	// prepare all reads
+	const ioDirAllInput = 0xF1
+	const ioStateAllInput = 0xF2
+	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
+		numCallsRead++
+		if numCallsRead == 1 {
+			// first call read current io direction of all pins
+			b[0] = ioDirAllInput
+		}
+		if numCallsRead == 2 {
+			// second call read current state of all pins
+			b[0] = ioStateAllInput
+		}
 		return len(b), nil
 	}
-	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+	// prepare all writes
+	const ioDirPinUnderTestExpected = uint8(0xB1)
+	const ioStatePinUnderTestExpected = uint8(0xB2)
+	ioDirPinUnderTest := uint8(0)
+	ioStatePinUnderTest := uint8(0)
+	numCallsWrite := 0
+	adaptor.i2cWriteImpl = func(b []byte) (int, error) {
+		numCallsWrite++
+		if numCallsWrite == 1 {
+			// first call write io direction with pin under test changed to output
+			ioDirPinUnderTest = b[0]
+		}
+		if numCallsWrite == 2 {
+			// second call write io state with pin under test reset
+			ioStatePinUnderTest = b[0]
+		}
 		return 0, nil
 	}
 	// act
-	err := pca.WriteGPIO(7, 0)
+	err := pca.WriteGPIO(pinUnderTest, 0)
 	// assert
 	gobottest.Assert(t, err, nil)
+	gobottest.Assert(t, numCallsRead, 2)
+	gobottest.Assert(t, numCallsWrite, 2)
+	gobottest.Assert(t, ioDirPinUnderTest, ioDirPinUnderTestExpected)
+	gobottest.Assert(t, ioStatePinUnderTest, ioStatePinUnderTestExpected)
 }
 
 func TestPCA9501DriverWriteGPIOSetBit(t *testing.T) {
 	// arrange
+	pinUnderTest := uint8(3)
 	pca, adaptor := initPCA9501TestDriver()
+	// prepare all reads
+	const ioDirAllInput = 0x1F
+	const ioStateAllInput = 0x20
+	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
+		numCallsRead++
+		if numCallsRead == 1 {
+			// first call read current io direction of all pins
+			b[0] = ioDirAllInput
+		}
+		if numCallsRead == 2 {
+			// second call read current state of all pins
+			b[0] = ioStateAllInput
+		}
 		return len(b), nil
 	}
-	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+	// prepare all writes
+	const ioDirPinUnderTestExpected = uint8(0x17)
+	const ioStatePinUnderTestExpected = uint8(0x28)
+	ioDirPinUnderTest := uint8(0)
+	ioStatePinUnderTest := uint8(0)
+	numCallsWrite := 0
+	adaptor.i2cWriteImpl = func(b []byte) (int, error) {
+		numCallsWrite++
+		if numCallsWrite == 1 {
+			// first call write io direction with pin under test changed to output
+			ioDirPinUnderTest = b[0]
+		}
+		if numCallsWrite == 2 {
+			// second call write io state with pin under test reset
+			ioStatePinUnderTest = b[0]
+		}
 		return 0, nil
 	}
 	// act
-	err := pca.WriteGPIO(7, 2)
+	err := pca.WriteGPIO(pinUnderTest, 2)
 	// assert
 	gobottest.Assert(t, err, nil)
+	gobottest.Assert(t, numCallsRead, 2)
+	gobottest.Assert(t, numCallsWrite, 2)
+	gobottest.Assert(t, ioDirPinUnderTest, ioDirPinUnderTestExpected)
+	gobottest.Assert(t, ioStatePinUnderTest, ioStatePinUnderTestExpected)
 }
 
 func TestPCA9501DriverWriteGPIOErrCTRL(t *testing.T) {
@@ -173,24 +239,55 @@ func TestPCA9501DriverWriteGPIOErrCTRL(t *testing.T) {
 	gobottest.Assert(t, err, errors.New("write error"))
 }
 
-func TestPCA9501DriverWriteGPIOErrVAL(t *testing.T) {
+func TestPCA9501DriverWriteGPIOErrorAtFirstWrite(t *testing.T) {
 	// arrange
+	expectedWriteError := errors.New("write error")
 	pca, adaptor := initPCA9501TestDriver()
+	// prepare all reads
+	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
+		numCallsRead++
 		return len(b), nil
 	}
-	numCalls := 1
+	// prepare all writes
+	numCallsWrite := 0
 	adaptor.i2cWriteImpl = func([]byte) (int, error) {
-		if numCalls == 2 {
-			return 0, errors.New("write error")
+		numCallsWrite++
+		if numCallsWrite == 1 {
+			return 0, expectedWriteError
 		}
-		numCalls++
 		return 0, nil
 	}
 	// act
 	err := pca.WriteGPIO(7, 0)
 	// assert
-	gobottest.Assert(t, err, errors.New("write error"))
+	gobottest.Assert(t, err, expectedWriteError)
+	gobottest.Assert(t, numCallsRead < 2, true)
+	gobottest.Assert(t, numCallsWrite, 1)
+}
+
+func TestPCA9501DriverWriteGPIOErrorAtSecondWrite(t *testing.T) {
+	// arrange
+	expectedWriteError := errors.New("write error")
+	pca, adaptor := initPCA9501TestDriver()
+	// prepare all reads
+	adaptor.i2cReadImpl = func(b []byte) (int, error) {
+		return len(b), nil
+	}
+	// prepare all writes
+	numCallsWrite := 0
+	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+		numCallsWrite++
+		if numCallsWrite == 2 {
+			return 0, expectedWriteError
+		}
+		return 0, nil
+	}
+	// act
+	err := pca.WriteGPIO(7, 0)
+	// assert
+	gobottest.Assert(t, err, expectedWriteError)
+	gobottest.Assert(t, numCallsWrite, 2)
 }
 
 func TestPCA9501DriverWriteEEPROM(t *testing.T) {
@@ -205,6 +302,18 @@ func TestPCA9501DriverWriteEEPROM(t *testing.T) {
 	gobottest.Assert(t, err, nil)
 }
 
+func TestPCA9501DriverWriteEEPROMWithDummyAddressReturnsError(t *testing.T) {
+	// arrange
+	pca, adaptor := initPCA9501TestDriver()
+	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+		return 0, nil
+	}
+	// act
+	err := pca.WriteEEPROM(0, 7)
+	// assert
+	gobottest.Assert(t, err, errors.New("Dummy address 0 not meaningfull to write\n"))
+}
+
 func TestPCA9501DriverReadGPIO(t *testing.T) {
 	// arrange
 	pca, adaptor := initPCA9501TestDriver()
@@ -217,16 +326,57 @@ func TestPCA9501DriverReadGPIO(t *testing.T) {
 	gobottest.Assert(t, val, uint8(0))
 }
 
-func TestPCA9501DriverReadGPIOErrorWhileRead(t *testing.T) {
+func TestPCA9501DriverReadGPIOErrorAtFirstRead(t *testing.T) {
 	// arrange
+	expectedReadError := errors.New("read error")
 	pca, adaptor := initPCA9501TestDriver()
+	numCallsRead := 0
+	// prepare all reads
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		return len(b), errors.New("error while read")
+		numCallsRead++
+		if numCallsRead == 1 {
+			return 0, expectedReadError
+		}
+		return len(b), nil
+	}
+	// prepare all writes
+	numCallsWrite := 0
+	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+		numCallsWrite++
+		return 0, nil
 	}
 	// act
-	_, err := pca.ReadGPIO(7)
+	_, err := pca.ReadGPIO(1)
 	// assert
-	gobottest.Assert(t, err, errors.New("error while read"))
+	gobottest.Assert(t, err, expectedReadError)
+	gobottest.Assert(t, numCallsRead, 1)
+	gobottest.Assert(t, numCallsWrite, 0)
+}
+
+func TestPCA9501DriverReadGPIOErrorAtSecondRead(t *testing.T) {
+	// arrange
+	expectedReadError := errors.New("read error")
+	pca, adaptor := initPCA9501TestDriver()
+	numCallsRead := 0
+	// prepare all reads
+	adaptor.i2cReadImpl = func(b []byte) (int, error) {
+		numCallsRead++
+		if numCallsRead == 2 {
+			return 0, expectedReadError
+		}
+		return len(b), nil
+	}
+	// prepare all writes
+	numCallsWrite := 0
+	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+		numCallsWrite++
+		return 0, nil
+	}
+	// act
+	_, err := pca.ReadGPIO(2)
+	// assert
+	gobottest.Assert(t, err, expectedReadError)
+	gobottest.Assert(t, numCallsWrite, 1)
 }
 
 func TestPCA9501DriverReadEEPROM(t *testing.T) {
@@ -242,6 +392,16 @@ func TestPCA9501DriverReadEEPROM(t *testing.T) {
 	val, _ := pca.ReadEEPROM(15)
 	// assert
 	gobottest.Assert(t, val, uint8(0))
+}
+
+func TestPCA9501DriverReadEEPROMWithDummyAddressReturnsErrorAndDummyValue(t *testing.T) {
+	// arrange
+	pca, _ := initPCA9501TestDriver()
+	// act
+	val, err := pca.ReadEEPROM(0x00)
+	// assert
+	gobottest.Assert(t, err, errors.New("Dummy address 0 not meaningfull to read\n"))
+	gobottest.Assert(t, val, uint8(0x15))
 }
 
 func TestPCA9501DriverReadEEPROMErrorWhileRead(t *testing.T) {

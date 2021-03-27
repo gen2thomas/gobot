@@ -1,7 +1,6 @@
 package i2c
 
 import (
-	"errors"
 	"fmt"
 	"gobot.io/x/gobot"
 	"time"
@@ -182,7 +181,7 @@ func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
 	// Please read explanation at the end of this document to understand, why it is implemented in this way
 	if address == pca9501MemReadDummyAddress {
-		return pca9501MemReadDummyValue, errors.New(fmt.Sprintf("Dummy address %d not meaningfull to read\n", pca9501MemReadDummyAddress))
+		return pca9501MemReadDummyValue, fmt.Errorf("Dummy address %d not meaningfull to read\n", pca9501MemReadDummyAddress)
 	}
 	// write dummy value to set the address counter to n
 	err = p.connectionMem.WriteByteData(pca9501MemReadDummyAddress, pca9501MemReadDummyValue)
@@ -202,7 +201,7 @@ func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
 // WriteEEPROM writes a value to a given address in memory (0x00-0xFF)
 func (p *PCA9501Driver) WriteEEPROM(address uint8, val uint8) (err error) {
 	if address == pca9501MemReadDummyAddress {
-		return errors.New(fmt.Sprintf("Dummy address %d not meaningfull to write\n", pca9501MemReadDummyAddress))
+		return fmt.Errorf("Dummy address %d not meaningfull to write\n", pca9501MemReadDummyAddress)
 	}
 	return p.connectionMem.WriteByteData(address, val)
 }

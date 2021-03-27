@@ -10,7 +10,7 @@ import (
 // PCA953xAddress is set to variant PCA9533/2
 const PCA953xAddress = 0x63
 
-// PCA953xGPIOMode is used to set the mode while write GPIO
+// PCA953xRegister is used to specify the register
 type PCA953xRegister uint8
 
 // there are 6 registers
@@ -37,17 +37,16 @@ const (
 	PCA953xModeLow = 0x01
 	// PCA953xModePwm0 set the GPIO to PWM (PWM0 & PSC0)
 	PCA953xModePwm0 = 0x02
-	// PCA953xModePwm0 set the GPIO to PWM (PWM1 & PSC1)
+	// PCA953xModePwm1 set the GPIO to PWM (PWM1 & PSC1)
 	PCA953xModePwm1 = 0x03
 )
 
-var ErrToMuchBytes = errors.New("To much bytes read")
-var ErrToSmallPeriod = errors.New("Given Period to small, must be at least 1/152s (~6.58ms) or 152Hz")
-var ErrToBigPeriod = errors.New("Given Period to high, must be max. 256/152s (~1.68s) or 152/256Hz (~0.6Hz)")
-var ErrToSmallDutyCycle = errors.New("Given Duty Cycle to small, must be at least 0%")
-var ErrToBigDutyCycle = errors.New("Given Duty Cycle to high, must be max. 100%")
+var errToSmallPeriod = errors.New("Given Period to small, must be at least 1/152s (~6.58ms) or 152Hz")
+var errToBigPeriod = errors.New("Given Period to high, must be max. 256/152s (~1.68s) or 152/256Hz (~0.6Hz)")
+var errToSmallDutyCycle = errors.New("Given Duty Cycle to small, must be at least 0%")
+var errToBigDutyCycle = errors.New("Given Duty Cycle to high, must be max. 100%")
 
-// PCA953x is a Gobot Driver for LED Dimmer PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
+// PCA953xDriver is a Gobot Driver for LED Dimmer PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
 // Although this is designed for LED's it can be used as a GPIO (read, write, pwm).
 // The names of the public functions reflect this.
 //
@@ -107,18 +106,19 @@ func (p *PCA953xDriver) SetName(n string) { p.name = n }
 func (p *PCA953xDriver) Connection() gobot.Connection { return p.connector.(gobot.Connection) }
 
 // Start initializes the PCA953x
-func (p *PCA953xDriver) Start() (err error) {
+func (p *PCA953xDriver) Start() error {
+	var err error
 	bus := p.GetBusOrDefault(p.connector.GetDefaultBus())
 	address := p.GetAddressOrDefault(PCA953xAddress)
 	p.connection, err = p.connector.GetConnection(address, bus)
 	return err
 }
 
-// Halt stops the device
-func (p *PCA953xDriver) Halt() (err error) { return }
+// Halt do nothing than return nil
+func (p *PCA953xDriver) Halt() error { return nil }
 
 // WriteGPIO writes a value to a gpio output (index 0-7)
-func (p *PCA953xDriver) WriteGPIO(idx uint8, mode PCA953xGPIOMode) (err error) {
+func (p *PCA953xDriver) WriteGPIO(idx uint8, mode PCA953xGPIOMode) error {
 	// prepare
 	var regLs PCA953xRegister = pca953xRegLs0
 	if idx > 3 {
@@ -128,6 +128,9 @@ func (p *PCA953xDriver) WriteGPIO(idx uint8, mode PCA953xGPIOMode) (err error) {
 	regLsShift := idx * 2
 	// read old value
 	regLsVal, err := p.readRegister(regLs)
+	if err != nil {
+		return err
+	}
 	// reset 2 bits at LED postion
 	regLsVal &= ^uint8(0x03 << regLsShift)
 	// set 2 bits according to mode at LED position
@@ -238,10 +241,10 @@ func pca953xCalcPsc(valSec float32) (uint8, error) {
 	// valSec = (PSC+1)/152; (PSC=0..255)
 	psc := 152*valSec - 1
 	if psc < 0 {
-		return 0, ErrToSmallPeriod
+		return 0, errToSmallPeriod
 	}
 	if psc > 255 {
-		return 255, ErrToBigPeriod
+		return 255, errToBigPeriod
 	}
 	// add 0.5 for better rounding experience
 	return uint8(psc + 0.5), nil
@@ -255,10 +258,10 @@ func pca953xCalcPwm(valPercent float32) (uint8, error) {
 	// valPercent = PWM/256*(256/255*100); (PWM=0..255)
 	pwm := 255 * valPercent / 100
 	if pwm < 0 {
-		return 0, ErrToSmallDutyCycle
+		return 0, errToSmallDutyCycle
 	}
 	if pwm > 255 {
-		return 255, ErrToBigDutyCycle
+		return 255, errToBigDutyCycle
 	}
 	// add 0.5 for better rounding experience
 	return uint8(pwm + 0.5), nil
@@ -277,7 +280,7 @@ func (p *PCA953xDriver) writeRegister(regAddress PCA953xRegister, val uint8) err
 }
 
 // read the content of the given register
-func (p *PCA953xDriver) readRegister(regAddress PCA953xRegister) (val uint8, err error) {
+func (p *PCA953xDriver) readRegister(regAddress PCA953xRegister) (uint8, error) {
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
 	return p.connection.ReadByteData(uint8(regAddress))

@@ -128,11 +128,11 @@ func TestPCA953xReadGPIOErrorWhileRead(t *testing.T) {
 func TestPCA953xCalcPsc(t *testing.T) {
 	// arrange
 	var pca953xCalcPscTests = []pca953xCalcPscTest{
-		{period: 0.0065, expectedVal: 0, expectedErr: ErrToSmallPeriod},
+		{period: 0.0065, expectedVal: 0, expectedErr: errToSmallPeriod},
 		{period: 0.0066, expectedVal: 0, expectedErr: nil},
 		{period: 1, expectedVal: 151, expectedErr: nil},
 		{period: 1.684, expectedVal: 255, expectedErr: nil},
-		{period: 1.685, expectedVal: 255, expectedErr: ErrToBigPeriod},
+		{period: 1.685, expectedVal: 255, expectedErr: errToBigPeriod},
 	}
 	for _, tp := range pca953xCalcPscTests {
 		// act
@@ -162,12 +162,12 @@ func TestPCA953xCalcPeriod(t *testing.T) {
 func TestPCA953xCalcPwm(t *testing.T) {
 	// arrange
 	var pca953xCalcPwmTests = []pca953xCalcPwmTest{
-		{percent: -0.1, expectedVal: 0, expectedErr: ErrToSmallDutyCycle},
+		{percent: -0.1, expectedVal: 0, expectedErr: errToSmallDutyCycle},
 		{percent: 0, expectedVal: 0, expectedErr: nil},
 		{percent: 49.9, expectedVal: 127, expectedErr: nil},
 		{percent: 50, expectedVal: 128, expectedErr: nil},
 		{percent: 100, expectedVal: 255, expectedErr: nil},
-		{percent: 100.1, expectedVal: 255, expectedErr: ErrToBigDutyCycle},
+		{percent: 100.1, expectedVal: 255, expectedErr: errToBigDutyCycle},
 	}
 	for _, tp := range pca953xCalcPwmTests {
 		// act

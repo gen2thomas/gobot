@@ -114,17 +114,19 @@ func TestPCA953xReadGPIO(t *testing.T) {
 
 func TestPCA953xReadGPIOErrorWhileRead(t *testing.T) {
 	// arrange
+	expectedReadError := errors.New("read error")
 	pca, adaptor := initPCA953xTestDriver()
 	adaptor.i2cReadImpl = func([]byte) (int, error) {
-		return 0, errors.New("error while read")
+		return 0, expectedReadError
 	}
 	// act
 	_, err := pca.ReadGPIO(2) // index doesn't matter
 	// assert
-	gobottest.Assert(t, err, errors.New("error while read"))
+	gobottest.Assert(t, err, expectedReadError)
 }
 
 func TestPCA953xCalcPsc(t *testing.T) {
+	// arrange
 	var pca953xCalcPscTests = []pca953xCalcPscTest{
 		{period: 0.0065, expectedVal: 0, expectedErr: ErrToSmallPeriod},
 		{period: 0.0066, expectedVal: 0, expectedErr: nil},
@@ -133,13 +135,16 @@ func TestPCA953xCalcPsc(t *testing.T) {
 		{period: 1.685, expectedVal: 255, expectedErr: ErrToBigPeriod},
 	}
 	for _, tp := range pca953xCalcPscTests {
+		// act
 		val, err := pca953xCalcPsc(tp.period)
+		// assert
 		gobottest.Assert(t, err, tp.expectedErr)
 		gobottest.Assert(t, val, tp.expectedVal)
 	}
 }
 
 func TestPCA953xCalcPeriod(t *testing.T) {
+	// arrange
 	var pca953xCalcPeriodTests = []pca953xCalcPeriodTest{
 		{psc: 0, expectedVal: 0.0066},
 		{psc: 1, expectedVal: 0.0132},
@@ -147,12 +152,15 @@ func TestPCA953xCalcPeriod(t *testing.T) {
 		{psc: 255, expectedVal: 1.6842},
 	}
 	for _, tp := range pca953xCalcPeriodTests {
+		// act
 		val := pca953xCalcPeriod(tp.psc)
+		// assert
 		gobottest.Assert(t, float32(math.Round(float64(val)*10000)/10000), tp.expectedVal)
 	}
 }
 
 func TestPCA953xCalcPwm(t *testing.T) {
+	// arrange
 	var pca953xCalcPwmTests = []pca953xCalcPwmTest{
 		{percent: -0.1, expectedVal: 0, expectedErr: ErrToSmallDutyCycle},
 		{percent: 0, expectedVal: 0, expectedErr: nil},
@@ -162,13 +170,16 @@ func TestPCA953xCalcPwm(t *testing.T) {
 		{percent: 100.1, expectedVal: 255, expectedErr: ErrToBigDutyCycle},
 	}
 	for _, tp := range pca953xCalcPwmTests {
+		// act
 		val, err := pca953xCalcPwm(tp.percent)
+		// assert
 		gobottest.Assert(t, err, tp.expectedErr)
 		gobottest.Assert(t, val, tp.expectedVal)
 	}
 }
 
 func TestPCA953xCalcDutyCyclePercent(t *testing.T) {
+	// arrange
 	var pca953xCalcPwmTests = []pca953xCalcDutyCycleTest{
 		{pwm: 0, expectedVal: 0},
 		{pwm: 127, expectedVal: 49.8},
@@ -176,7 +187,9 @@ func TestPCA953xCalcDutyCyclePercent(t *testing.T) {
 		{pwm: 255, expectedVal: 100},
 	}
 	for _, tp := range pca953xCalcPwmTests {
+		// act
 		val := pca953xCalcDutyCyclePercent(tp.pwm)
+		// assert
 		gobottest.Assert(t, float32(math.Round(float64(val)*10)/10), tp.expectedVal)
 	}
 }
@@ -185,25 +198,33 @@ func TestPCA953xReadRegister(t *testing.T) {
 	// arrange
 	const expectedRegAddress = PCA953xRegister(0x03)
 	const expectedReadByteCount = 1
-	var regAddress uint8
-	var bytes int
-
+	const expectedRegVal = uint8(0x04)
+	readByteCount := 0
 	pca, adaptor := initPCA953xTestDriver()
-	adaptor.i2cWriteImpl = func(b []byte) (int, error) {
-		regAddress = b[0]
+	// prepare all writes
+	numCallsWrite := 0
+	adaptor.i2cWriteImpl = func([]byte) (int, error) {
+		numCallsWrite++
 		return 0, nil
 	}
+	// prepare all reads
+	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		bytes = len(b)
-		return bytes, nil
+		numCallsRead++
+		readByteCount = len(b)
+		b[0] = expectedRegVal
+		return readByteCount, nil
 	}
 	// act
 	val, err := pca.readRegister(expectedRegAddress)
 	// assert
 	gobottest.Assert(t, err, nil)
-	gobottest.Assert(t, val, uint8(0))
-	gobottest.Assert(t, bytes, expectedReadByteCount)
-	gobottest.Assert(t, regAddress, uint8(expectedRegAddress))
+	gobottest.Assert(t, numCallsRead, 1)
+	gobottest.Assert(t, numCallsWrite, 1)
+	gobottest.Assert(t, val, expectedRegVal)
+	gobottest.Assert(t, readByteCount, expectedReadByteCount)
+	gobottest.Assert(t, len(adaptor.written), 1)
+	gobottest.Assert(t, adaptor.written[0], uint8(expectedRegAddress))
 }
 
 func TestPCA953xWriteRegister(t *testing.T) {
@@ -211,56 +232,20 @@ func TestPCA953xWriteRegister(t *testing.T) {
 	const expectedRegAddress = PCA953xRegister(0x03)
 	const expectedRegVal = uint8(0x97)
 	const expectedByteCount = 2
-	var regAddress uint8
-	var regVal uint8
-	var bytesCount int
-
 	pca, adaptor := initPCA953xTestDriver()
-	numCalls := 0
+	// prepare all writes
+	numCallsWrite := 0
 	adaptor.i2cWriteImpl = func(b []byte) (int, error) {
-		numCalls++
-		if numCalls == 1 {
-			bytesCount = len(b)
-			regAddress = b[0]
-			regVal = b[1]
-
-			return 0, nil
-		}
-		return 0, errors.New("to much calls")
+		numCallsWrite++
+		return 0, nil
 	}
 	// act
 	err := pca.writeRegister(expectedRegAddress, expectedRegVal)
 	// assert
 	gobottest.Assert(t, err, nil)
-	gobottest.Assert(t, numCalls, 1)
-	gobottest.Assert(t, bytesCount, expectedByteCount)
-	gobottest.Assert(t, regAddress, uint8(expectedRegAddress))
-	gobottest.Assert(t, regVal, expectedRegVal)
-
-}
-
-func TestPCA953xRead(t *testing.T) {
-	// read
-	pca, adaptor := initPCA953xTestDriver()
-	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		copy(b, []byte{255})
-		return 1, nil
-	}
-	// act
-	val, _ := pca.read()
-	// assert
-	gobottest.Assert(t, val, uint8(255))
-}
-
-func TestPCA953xReadError(t *testing.T) {
-	// arrange
-	pca, adaptor := initPCA953xTestDriver()
-	adaptor.i2cReadImpl = func(b []byte) (int, error) {
-		return len(b), errors.New("read error")
-	}
-	// act
-	val, err := pca.read()
-	// assert
-	gobottest.Assert(t, val, uint8(0))
-	gobottest.Assert(t, err, errors.New("read error"))
+	gobottest.Assert(t, numCallsWrite, 1)
+	gobottest.Assert(t, numCallsWrite, 1)
+	gobottest.Assert(t, len(adaptor.written), expectedByteCount)
+	gobottest.Assert(t, adaptor.written[0], uint8(expectedRegAddress))
+	gobottest.Assert(t, adaptor.written[1], uint8(expectedRegVal))
 }

@@ -3,7 +3,6 @@ package i2c
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"gobot.io/x/gobot"
 )
@@ -274,40 +273,12 @@ func (p *PCA953xDriver) writeRegister(regAddress PCA953xRegister, val uint8) err
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
 	// write content of requested register
-	_, err := p.connection.Write([]byte{uint8(regAddress), val})
-	if err != nil {
-		// repeat
-		time.Sleep(20 * time.Millisecond)
-		_, err = p.connection.Write([]byte{uint8(regAddress), val})
-	}
-	return err
+	return p.connection.WriteByteData(uint8(regAddress), val)
 }
 
 // read the content of the given register
-func (p *PCA953xDriver) readRegister(regAddress PCA953xRegister) (uint8, error) {
+func (p *PCA953xDriver) readRegister(regAddress PCA953xRegister) (val uint8, err error) {
 	// ensure AI bit is not set
 	regAddress = regAddress &^ pca953xAiMask
-	// write CTRL register
-	_, err := p.connection.Write([]uint8{uint8(regAddress)})
-	if err != nil {
-		return 0, err
-	}
-	// read content of requested register
-	return p.read()
-}
-
-// read the value from the connection
-func (p *PCA953xDriver) read() (uint8, error) {
-	buf := []byte{0}
-	bytesRead, err := p.connection.Read(buf)
-	if err != nil {
-		return 0, err
-	}
-	if bytesRead < 1 {
-		return 0, ErrNotEnoughBytes
-	}
-	if bytesRead > 1 {
-		return 0, ErrToMuchBytes
-	}
-	return buf[0], nil
+	return p.connection.ReadByteData(uint8(regAddress))
 }

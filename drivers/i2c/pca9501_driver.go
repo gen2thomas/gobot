@@ -39,6 +39,12 @@ type PCA9501Driver struct {
 	gobot.Commander
 }
 
+// PCA9501DriverMemReadDummy contains the dummy values used for reading EEPROM address
+type PCA9501DriverMemReadDummy struct {
+	Address uint8
+	Value   uint8
+}
+
 // NewPCA9501Driver creates a new driver with specified i2c interface
 // Params:
 //		conn Connector - the Adaptor to use with this Driver
@@ -191,8 +197,7 @@ func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
 	time.Sleep(10 * time.Millisecond)
 	// read all addresses, starting with n+1
 	buf := make([]uint8, 255)
-	_, err = p.connectionMem.Read(buf)
-	if err != nil {
+	if err = p.readMemAndCheckCount(buf); err != nil {
 		return val, err
 	}
 	return buf[address-1-pca9501MemReadDummyAddress], err
@@ -204,6 +209,10 @@ func (p *PCA9501Driver) WriteEEPROM(address uint8, val uint8) (err error) {
 		return fmt.Errorf("Dummy address %d not meaningfull to write\n", pca9501MemReadDummyAddress)
 	}
 	return p.connectionMem.WriteByteData(address, val)
+}
+
+func (p *PCA9501Driver) MemReadDummy() PCA9501DriverMemReadDummy {
+	return PCA9501DriverMemReadDummy{Address: pca9501MemReadDummyAddress, Value: pca9501MemReadDummyValue}
 }
 
 func setBitAtPos(n uint8, pos uint8) uint8 {
@@ -219,6 +228,19 @@ func clearBitAtPos(n uint8, pos uint8) uint8 {
 
 func (p *PCA9501Driver) getAddressMem(defaultAdress int) int {
 	return p.GetAddressOrDefault(defaultAdress) | 0x40
+}
+
+func (p *PCA9501Driver) readMemAndCheckCount(buf []byte) (err error) {
+	countRead := 0
+	if countRead, err = p.connectionMem.Read(buf); err != nil {
+		return
+	}
+	expectedCount := len(buf)
+	if countRead != expectedCount {
+		err = fmt.Errorf("PCA9501 i2c read %d bytes from EEPROM, expected %d bytes", countRead, expectedCount)
+		return
+	}
+	return
 }
 
 // Explanation for EEPROM read possibilities of PCA9501 and ristrictions with adaptor implementations

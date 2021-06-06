@@ -16,6 +16,7 @@
     * add BMP388 Barometric Pressure/Temperature/Altitude Sensor
     * add PCA9501 8-bit I/O port with interrupt, 2-kbit EEPROM
     * add PCA953x LED Dimmer for PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
+    * add SC16IS750 I2C/SPI to UART, 8-bit I/O, IrDA SIR (supports also SC16IS740, SC16IS760)
 * **pwm**
     * Resolve issue with PWM for PWMWrite
 * **mqtt**

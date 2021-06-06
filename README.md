@@ -286,6 +286,7 @@ drivers provided using the `gobot/drivers/i2c` package:
 	- PCA9501 8-bit I/O port with interrupt, 2-kbit EEPROM
 	- PCA953x LED Dimmer for PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
 	- PCA9685 16-channel 12-bit PWM/Servo Driver
+	- SC16IS750 I2C/SPI to UART, 8-bit I/O, IrDA SIR (supports also SC16IS740, SC16IS760)
 	- SHT2x Temperature/Humidity
 	- SHT3x-D Temperature/Humidity
 	- SSD1306 OLED Display Controller

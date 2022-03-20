@@ -14,6 +14,8 @@
 * **i2c**
     * add SHT2x device
     * add BMP388 Barometric Pressure/Temperature/Altitude Sensor
+    * add PCA9501 8-bit I/O port with interrupt, 2-kbit EEPROM
+    * add PCA953x LED Dimmer for PCA9530 (2-bit), PCA9533 (4-bit), PCA9531 (8-bit), PCA9532 (16-bit)
 * **pwm**
     * Resolve issue with PWM for PWMWrite
 * **mqtt**

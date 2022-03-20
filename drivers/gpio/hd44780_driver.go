@@ -2,8 +2,10 @@ package gpio
 
 import (
 	"errors"
-	"gobot.io/x/gobot"
+	"fmt"
 	"time"
+
+	"gobot.io/x/gobot"
 )
 
 const (
@@ -264,7 +266,7 @@ func (h *HD44780Driver) Home() (err error) {
 // SetCursor move the cursor to the specified position
 func (h *HD44780Driver) SetCursor(col int, row int) (err error) {
 	if col < 0 || row < 0 || col >= h.cols || row >= h.rows {
-		return errors.New("Invalid position value")
+		return fmt.Errorf("Invalid position value (%d, %d), range (%d, %d)", col, row, h.cols-1, h.rows-1)
 	}
 
 	return h.SendCommand(HD44780_SETDDRAMADDR | col + h.rowOffsets[row])

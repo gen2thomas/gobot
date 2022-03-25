@@ -16,7 +16,7 @@ func initTestPCF8591DriverWithStubbedAdaptor() (*PCF8591Driver, *i2cTestAdaptor)
 
 func TestPCF8591DriverAnalogReadSingle(t *testing.T) {
 	// sequence to read the input channel:
-	// * prepare value (with channel and config) and write control register
+	// * prepare value (with channel and mode) and write control register
 	// * read 3 values to drop (see description in implementation)
 	// * read the analog value
 	//
@@ -52,7 +52,8 @@ func TestPCF8591DriverAnalogReadSingle(t *testing.T) {
 
 func TestPCF8591DriverAnalogReadDiff(t *testing.T) {
 	// sequence to read the input channel:
-	// * prepare value (with channel and config) and write control register
+	// * prepare value (with channel and mode) and write control register
+	// * read 3 values to drop (see description in implementation)
 	// * read the analog value
 	// * convert to 8-bit two's complement (-127...128)
 	//

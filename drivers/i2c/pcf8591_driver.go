@@ -13,33 +13,36 @@ import (
 // The default address applies when all address pins connected to ground.
 const pcf8591DefaultAddress = 0x48
 
-const pcf8591Debug = true
+const (
+	pcf8591Debug       = true
+	pcf8591RotateCount = 0 // usefully for debugging purposes
+)
 
-type mode uint8
-type channel uint8
+type pcf8591Mode uint8
+type pcf8591Channel uint8
 
 const (
-	pcf8591_CHAN0 channel = 0x00
-	pcf8591_CHAN1         = 0x01
-	pcf8591_CHAN2         = 0x02
-	pcf8591_CHAN3         = 0x03
+	pcf8591_CHAN0 pcf8591Channel = 0x00
+	pcf8591_CHAN1                = 0x01
+	pcf8591_CHAN2                = 0x02
+	pcf8591_CHAN3                = 0x03
 )
 
 const pcf8591_AION = 0x04 // auto increment, only relevant for ADC
 
 const (
-	pcf8591_ALLSINGLE mode = 0x00
-	pcf8591_THREEDIFF      = 0x10
-	pcf8591_MIXED          = 0x20
-	pcf8591_TWODIFF        = 0x30
-	pcf8591_ANAON          = 0x40
+	pcf8591_ALLSINGLE pcf8591Mode = 0x00
+	pcf8591_THREEDIFF             = 0x10
+	pcf8591_MIXED                 = 0x20
+	pcf8591_TWODIFF               = 0x30
+	pcf8591_ANAON                 = 0x40
 )
 
 const pcf8591_ADMASK = 0x33 // channels and mode
 
-type modeChan struct {
-	mode    mode
-	channel channel
+type pcf8591ModeChan struct {
+	mode    pcf8591Mode
+	channel pcf8591Channel
 }
 
 // modeMap is to define the relation between a given description and the mode and channel
@@ -58,7 +61,7 @@ type modeChan struct {
 // "t.0-3": differential value between input 0 and 3 => channel 0
 // "t.1-3": differential value between input 1 and 3 => channel 1
 // "t.2-3": differential value between input 1 and 3 => channel 2
-var modeMap = map[string]modeChan{
+var pcf8591ModeMap = map[string]pcf8591ModeChan{
 	"s.0":   {pcf8591_ALLSINGLE, pcf8591_CHAN0},
 	"0":     {pcf8591_ALLSINGLE, pcf8591_CHAN0},
 	"s.1":   {pcf8591_ALLSINGLE, pcf8591_CHAN1},
@@ -79,9 +82,6 @@ var modeMap = map[string]modeChan{
 	"1-3":   {pcf8591_THREEDIFF, pcf8591_CHAN1},
 	"t.2-3": {pcf8591_THREEDIFF, pcf8591_CHAN2},
 }
-
-const rotateCount = 0 // usefully for debugging purposes
-const skipReads = 3
 
 // PCF8591Driver is a Gobot Driver for the PCF8591 8-bit 4xA/D & 1xD/A converter with i2c interface and 3 address pins.
 // The analog inputs can be used as differential inputs in different ways.
@@ -105,9 +105,10 @@ type PCF8591Driver struct {
 	connection Connection
 	Config
 	gobot.Commander
-	lastCtrlByte uint8
-	lastAnaOut   uint8
-	LastRead     [rotateCount*4 + 1][]byte
+	lastCtrlByte   uint8
+	lastAnaOut     uint8
+	additionalSkip uint8
+	LastRead       [pcf8591RotateCount*4 + 1][]byte // for debugging purposes
 }
 
 // NewPCF8591Driver creates a new driver with specified i2c interface
@@ -117,16 +118,30 @@ type PCF8591Driver struct {
 // Optional params:
 //		i2c.WithBus(int):	bus to use with this driver
 //		i2c.WithAddress(int):	address to use with this driver
+//		i2c.WithPCF8591AdditionalSkip(uint8):	additional skip value to stabilize read
 //
 func NewPCF8591Driver(a Connector, options ...func(Config)) *PCF8591Driver {
 	p := &PCF8591Driver{
-		name:      gobot.DefaultName("PCF8591"),
-		connector: a,
-		Config:    NewConfig(),
-		Commander: gobot.NewCommander(),
+		name:           gobot.DefaultName("PCF8591"),
+		connector:      a,
+		Config:         NewConfig(),
+		Commander:      gobot.NewCommander(),
+		additionalSkip: 2,
 	}
 
 	return p
+}
+
+// WithPCF8591AdditionalSkip option sets the PCF8591 additionalSkip value
+func WithPCF8591AdditionalSkip(val uint8) func(Config) {
+	return func(c Config) {
+		d, ok := c.(*PCF8591Driver)
+		if ok {
+			d.additionalSkip = val
+		} else {
+			panic("trying to set value for non-PCF8591Driver")
+		}
+	}
 }
 
 // Name returns the Name for the Driver
@@ -171,17 +186,17 @@ func (p *PCF8591Driver) Halt() (err error) {
 // Important note:
 // With a bus speed of 100 kBit/sec, the ADC conversion has ~80 us + ACK (time to transfer the previous value).
 // This time seems to be a little bit to small (datasheet 90 us).
-// A active bus driver don't fix it (it seems rather the opposite).
+// An i2c bus extender (LTC4311) don't fix it (it seems rather the opposite).
 //
 // This leads to following behavior:
 // * the transition process takes an additional cycle, very often
 // * some circuits takes one cycle longer transition time in addition
 // * reading more than one byte by Read([]byte), e.g. to calculate an average, is not sufficient,
-//   because some missing integration steps in each byte (each byte is a little bit to small)
+//   because some missing integration steps in each conversion (each byte value is a little bit lower than expected)
 //
 // So, for default, we drop the first three bytes to get the right value.
 func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
-	mc, err := pcf8591GetModeChannel(description)
+	mc, err := pcf8591ParseModeChan(description)
 	if err != nil {
 		return 0, err
 	}
@@ -195,8 +210,8 @@ func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
 	}
 
 	// initiate read but skip some bytes
-	for i := uint8(0); i < rotateCount*4+1; i++ {
-		p.readBuf(i)
+	for i := uint8(0); i < pcf8591RotateCount*4+1; i++ {
+		p.readBuf(i, 1+p.additionalSkip)
 	}
 
 	// additional relax time
@@ -216,21 +231,6 @@ func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
 	return value, err
 }
 
-func (p *PCF8591Driver) readBuf(nr uint8) error {
-	buf := make([]byte, skipReads)
-	cntRead, err := p.connection.Read(buf)
-	if err != nil {
-		return err
-	}
-	if cntRead != len(buf) {
-		return fmt.Errorf("Not enough bytes (%d of %d) read", cntRead, len(buf))
-	}
-	if pcf8591Debug {
-		p.LastRead[nr] = buf
-	}
-	return nil
-}
-
 // AnalogWrite writes the given value to the analog output (DAC)
 // Vlsb = (Vref-Vagnd)/256
 // Vaout = Vagnd+Vlsb*value
@@ -243,13 +243,9 @@ func (p *PCF8591Driver) AnalogWrite(value uint8) (err error) {
 	}
 
 	ctrlByte := p.lastCtrlByte | pcf8591_ANAON
-	cntWritten, err := p.connection.Write([]byte{ctrlByte, value})
+	err = p.connection.WriteByteData(ctrlByte, value)
 	if err != nil {
 		return err
-	}
-
-	if cntWritten != 2 {
-		return fmt.Errorf("Not enough bytes (%d of %d) written", cntWritten, 2)
 	}
 
 	p.lastCtrlByte = ctrlByte
@@ -289,11 +285,26 @@ func (p *PCF8591Driver) writeCtrlByte(ctrlByte uint8) error {
 	return nil
 }
 
-func pcf8591GetModeChannel(description string) (*modeChan, error) {
-	mc, ok := modeMap[description]
+func (p *PCF8591Driver) readBuf(nr uint8, cntBytes uint8) error {
+	buf := make([]byte, cntBytes)
+	cntRead, err := p.connection.Read(buf)
+	if err != nil {
+		return err
+	}
+	if cntRead != len(buf) {
+		return fmt.Errorf("Not enough bytes (%d of %d) read", cntRead, len(buf))
+	}
+	if pcf8591Debug {
+		p.LastRead[nr] = buf
+	}
+	return nil
+}
+
+func pcf8591ParseModeChan(description string) (*pcf8591ModeChan, error) {
+	mc, ok := pcf8591ModeMap[description]
 	if !ok {
 		descriptions := []string{}
-		for k := range modeMap {
+		for k := range pcf8591ModeMap {
 			descriptions = append(descriptions, k)
 		}
 		ds := strings.Join(descriptions, ", ")
@@ -303,7 +314,7 @@ func pcf8591GetModeChannel(description string) (*modeChan, error) {
 	return &mc, nil
 }
 
-func (mc modeChan) pcf8591IsDiff() bool {
+func (mc pcf8591ModeChan) pcf8591IsDiff() bool {
 	switch mc.mode {
 	case pcf8591_TWODIFF:
 		return true

@@ -19,10 +19,10 @@ const (
 )
 
 type pcf8591Mode uint8
-type pcf8591Channel uint8
+type PCF8591Channel uint8
 
 const (
-	pcf8591_CHAN0 pcf8591Channel = 0x00
+	pcf8591_CHAN0 PCF8591Channel = 0x00
 	pcf8591_CHAN1                = 0x01
 	pcf8591_CHAN2                = 0x02
 	pcf8591_CHAN3                = 0x03
@@ -42,7 +42,7 @@ const pcf8591_ADMASK = 0x33 // channels and mode
 
 type pcf8591ModeChan struct {
 	mode    pcf8591Mode
-	channel pcf8591Channel
+	channel PCF8591Channel
 }
 
 // modeMap is to define the relation between a given description and the mode and channel
@@ -189,7 +189,7 @@ func WithPCF8591AdditionalSkip(val uint8) func(Config) {
 }
 
 // WithPCF8591RescaleInput option sets the PCF8591 scale values, toMin and toMax value for the given input channel
-func WithPCF8591RescaleInput(channel uint8, toMin, toMax int32) func(Config) {
+func WithPCF8591RescaleInput(channel PCF8591Channel, toMin, toMax int32) func(Config) {
 	return func(c Config) {
 		p, ok := c.(*PCF8591Driver)
 		if ok {
@@ -265,7 +265,7 @@ func (p *PCF8591Driver) Halt() (err error) {
 //
 // So, for default, we drop the first three bytes to get the right value.
 func (p *PCF8591Driver) AnalogRead(description string) (value int32, err error) {
-	mc, err := pcf8591ParseModeChan(description)
+	mc, err := PCF8591ParseModeChan(description)
 	if err != nil {
 		return 0, err
 	}
@@ -280,13 +280,15 @@ func (p *PCF8591Driver) AnalogRead(description string) (value int32, err error) 
 
 	// initiate read but skip some bytes
 	for i := uint8(0); i < pcf8591RotateCount*4+1; i++ {
-		p.readBuf(i, 1+p.additionalSkip)
+		if err := p.readBuf(i, 1+p.additionalSkip); err != nil {
+			return 0, err
+		}
 	}
 
 	// additional relax time
 	time.Sleep(1 * time.Millisecond)
 
-	// real read
+	// real used read
 	uval, err := p.connection.ReadByte()
 	if err != nil {
 		return 0, err
@@ -337,6 +339,22 @@ func (p *PCF8591Driver) AnalogOutputState(state bool) (err error) {
 	return nil
 }
 
+// PCF8591ParseModeChan is used to get a working combination between mode (single, mixed, 2 differential, 3 differential)
+// and the related channel to read from, parsed from the given description string.
+func PCF8591ParseModeChan(description string) (*pcf8591ModeChan, error) {
+	mc, ok := pcf8591ModeMap[description]
+	if !ok {
+		descriptions := []string{}
+		for k := range pcf8591ModeMap {
+			descriptions = append(descriptions, k)
+		}
+		ds := strings.Join(descriptions, ", ")
+		return nil, fmt.Errorf("Unknown description '%s' for read analog value, accepted values: %s", description, ds)
+	}
+
+	return &mc, nil
+}
+
 func (p *PCF8591Driver) writeCtrlByte(ctrlByte uint8) error {
 	if p.lastCtrlByte != ctrlByte {
 		if err := p.connection.WriteByte(ctrlByte); err != nil {
@@ -366,21 +384,14 @@ func (p *PCF8591Driver) readBuf(nr uint8, cntBytes uint8) error {
 	return nil
 }
 
-func pcf8591ParseModeChan(description string) (*pcf8591ModeChan, error) {
-	mc, ok := pcf8591ModeMap[description]
-	if !ok {
-		descriptions := []string{}
-		for k := range pcf8591ModeMap {
-			descriptions = append(descriptions, k)
-		}
-		ds := strings.Join(descriptions, ", ")
-		return nil, fmt.Errorf("Unknown description '%s' for read analog value, accepted values: %s", description, ds)
-	}
-
-	return &mc, nil
-}
-
 func pcf8591Rescale32(input, fromMin, fromMax, toMin, toMax int32) int32 {
+
+	if input < fromMin {
+		input = fromMin
+	}
+	if input > fromMax {
+		input = fromMax
+	}
 	return (input-fromMin)*(toMax-toMin)/(fromMax-fromMin) + toMin
 }
 

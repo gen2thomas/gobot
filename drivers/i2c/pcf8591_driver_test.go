@@ -22,12 +22,13 @@ func TestPCF8591DriverAnalogReadSingle(t *testing.T) {
 	//
 	// arrange
 	pcf, adaptor := initTestPCF8591DriverWithStubbedAdaptor()
+	WithPCF8591RescaleInput(1, 0, 255)(pcf)
 	adaptor.written = []byte{} // reset writes of Start() and former test
 	description := "s.1"
 	pcf.lastCtrlByte = 0x00
 	ctrlByteOn := uint8(pcf8591_ALLSINGLE | pcf8591_CHAN1)
 	returnRead := []uint8{0x01, 0x02, 0x03, 0xFF}
-	want := int(returnRead[3])
+	want := int32(returnRead[3])
 	// arrange reads
 	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
@@ -59,12 +60,18 @@ func TestPCF8591DriverAnalogReadDiff(t *testing.T) {
 	//
 	// arrange
 	pcf, adaptor := initTestPCF8591DriverWithStubbedAdaptor()
+	WithPCF8591RescaleInput(2, -128, 127)(pcf)
 	adaptor.written = []byte{} // reset writes of Start() and former test
 	description := "m.2-3"
 	pcf.lastCtrlByte = 0x00
 	ctrlByteOn := uint8(pcf8591_MIXED | pcf8591_CHAN2)
+	// some two' complements
+	// 0x80 => -128
+	// 0xFF => -1
+	// 0x00 => 0
+	// 0x7F => 127
 	returnRead := []uint8{0x01, 0x02, 0x03, 0xFF}
-	want := int(returnRead[3]) - 128
+	want := int32(-1)
 	// arrange reads
 	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
@@ -94,6 +101,7 @@ func TestPCF8591DriverAnalogWrite(t *testing.T) {
 	//
 	// arrange
 	pcf, adaptor := initTestPCF8591DriverWithStubbedAdaptor()
+	WithPCF8591RescaleOutput(0, 255)(pcf)
 	adaptor.written = []byte{} // reset writes of Start() and former test
 	pcf.lastCtrlByte = 0x00
 	pcf.lastAnaOut = 0x00
@@ -104,7 +112,7 @@ func TestPCF8591DriverAnalogWrite(t *testing.T) {
 		return len(b), nil
 	}
 	// act
-	err := pcf.AnalogWrite(want)
+	err := pcf.AnalogWrite(int32(want))
 	// assert
 	gobottest.Assert(t, err, nil)
 	gobottest.Assert(t, len(adaptor.written), 2)

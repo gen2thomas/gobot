@@ -27,7 +27,7 @@ func main() {
 		i2c.WithPCF8591RescaleInput(0, 1000, 0),
 		i2c.WithPCF8591RescaleInput(1, 255, 0),
 		i2c.WithPCF8591RescaleInput(3, 100, -100))
-	var val int32
+	var val int
 	var err error
 
 	// brightness sensor, high brightness - low raw value, scaled to 0..1000 (high brightness - high value)
@@ -40,7 +40,7 @@ func main() {
 	// adjustable resistor, turn clockwise will lower the raw value, scaled to -100..+100% (clockwise)
 	descResi := "s.3"
 	// the LED light is visible above ~1.6V
-	writeVal := int32(1500)
+	writeVal := 1500
 
 	work := func() {
 		gobot.Every(1000*time.Millisecond, func() {

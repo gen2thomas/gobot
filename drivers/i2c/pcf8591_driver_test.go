@@ -21,14 +21,14 @@ func TestPCF8591DriverWithAdditionalSkip(t *testing.T) {
 
 func TestPCF8591DriverWithRescaleInput(t *testing.T) {
 	pcf := NewPCF8591Driver(newI2cTestAdaptor(), WithPCF8591RescaleInput(2, -3, 4))
-	gobottest.Assert(t, pcf.toMin, [4]int32{0, 0, -3, 0})
-	gobottest.Assert(t, pcf.toMax, [4]int32{3300, 3300, 4, 3300})
+	gobottest.Assert(t, pcf.toMin, [4]int{0, 0, -3, 0})
+	gobottest.Assert(t, pcf.toMax, [4]int{3300, 3300, 4, 3300})
 }
 
 func TestPCF8591DriverWithRescaleOutput(t *testing.T) {
 	pcf := NewPCF8591Driver(newI2cTestAdaptor(), WithPCF8591RescaleOutput(5, 178))
-	gobottest.Assert(t, pcf.fromMin, int32(5))
-	gobottest.Assert(t, pcf.fromMax, int32(178))
+	gobottest.Assert(t, pcf.fromMin, 5)
+	gobottest.Assert(t, pcf.fromMax, 178)
 }
 
 func TestPCF8591DriverAnalogReadSingle(t *testing.T) {
@@ -46,7 +46,7 @@ func TestPCF8591DriverAnalogReadSingle(t *testing.T) {
 	pcf.lastCtrlByte = 0x00
 	ctrlByteOn := uint8(pcf8591_ALLSINGLE | pcf8591_CHAN1)
 	returnRead := []uint8{0x01, 0x02, 0x03, 0xFF}
-	want := int32(returnRead[3])
+	want := int(returnRead[3])
 	// arrange reads
 	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
@@ -90,7 +90,7 @@ func TestPCF8591DriverAnalogReadDiff(t *testing.T) {
 	// 0x00 => 0
 	// 0x7F => 127
 	returnRead := []uint8{0x01, 0x02, 0x03, 0xFF}
-	want := int32(-1)
+	want := -1
 	// arrange reads
 	numCallsRead := 0
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
@@ -132,7 +132,7 @@ func TestPCF8591DriverAnalogWrite(t *testing.T) {
 		return len(b), nil
 	}
 	// act
-	err := pcf.AnalogWrite(int32(want))
+	err := pcf.AnalogWrite(int(want))
 	// assert
 	gobottest.Assert(t, err, nil)
 	gobottest.Assert(t, len(adaptor.written), 2)
@@ -169,10 +169,10 @@ func TestPCF8591Driver_rescaleAI(t *testing.T) {
 	// the input scales per default from 0...255
 	var tests = map[string]struct {
 		desc  string
-		toMin int32
-		toMax int32
+		toMin int
+		toMax int
 		input byte
-		want  int32
+		want  int
 	}{
 		"single_byte_range_min":    {desc: "s.0", toMin: 0, toMax: 255, input: 0, want: 0},
 		"single_byte_range_max":    {desc: "m.1", toMin: 0, toMax: 255, input: 255, want: 255},
@@ -200,9 +200,9 @@ func TestPCF8591Driver_rescaleAI(t *testing.T) {
 func TestPCF8591Driver_rescaleAO(t *testing.T) {
 	// the output scales per default from the given value to 0...255
 	var tests = map[string]struct {
-		fromMin int32
-		fromMax int32
-		input   int32
+		fromMin int
+		fromMax int
+		input   int
 		want    uint8
 	}{
 		"byte_range_min":           {fromMin: 0, fromMax: 255, input: 0, want: 0},

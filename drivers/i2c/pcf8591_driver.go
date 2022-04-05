@@ -14,7 +14,7 @@ import (
 const pcf8591DefaultAddress = 0x48
 
 const (
-	pcf8591Debug       = true
+	pcf8591Debug       = false
 	pcf8591RotateCount = 0 // usefully for debugging purposes
 )
 
@@ -23,19 +23,19 @@ type PCF8591Channel uint8
 
 const (
 	pcf8591_CHAN0 PCF8591Channel = 0x00
-	pcf8591_CHAN1                = 0x01
-	pcf8591_CHAN2                = 0x02
-	pcf8591_CHAN3                = 0x03
+	pcf8591_CHAN1 PCF8591Channel = 0x01
+	pcf8591_CHAN2 PCF8591Channel = 0x02
+	pcf8591_CHAN3 PCF8591Channel = 0x03
 )
 
 const pcf8591_AION = 0x04 // auto increment, only relevant for ADC
 
 const (
 	pcf8591_ALLSINGLE pcf8591Mode = 0x00
-	pcf8591_THREEDIFF             = 0x10
-	pcf8591_MIXED                 = 0x20
-	pcf8591_TWODIFF               = 0x30
-	pcf8591_ANAON                 = 0x40
+	pcf8591_THREEDIFF pcf8591Mode = 0x10
+	pcf8591_MIXED     pcf8591Mode = 0x20
+	pcf8591_TWODIFF   pcf8591Mode = 0x30
+	pcf8591_ANAON     pcf8591Mode = 0x40
 )
 
 const pcf8591_ADMASK = 0x33 // channels and mode
@@ -98,8 +98,7 @@ var pcf8591ModeMap = map[string]pcf8591ModeChan{
 // For example, here is the Adafruit board that uses this chip:
 // https://www.adafruit.com/product/4648
 //
-// This driver was tested with Tinkerboard and this board with temperature & brightness sensor:
-// https://www.makershop.de/download/YL_40_PCF8591.pdf
+// This driver was tested with Tinkerboard and the YL-40 driver.
 //
 type PCF8591Driver struct {
 	name       string
@@ -110,12 +109,7 @@ type PCF8591Driver struct {
 	lastCtrlByte   byte
 	lastAnaOut     byte
 	additionalSkip uint8
-	toMax          [4]int
-	toMin          [4]int
-	fromMin        int
-	fromMax        int
-	rescaleAI      func(value byte, mc pcf8591ModeChan) (milliVolt int)
-	rescaleAO      func(milliVolt int) (value byte)
+	forceRefresh   bool
 	LastRead       [pcf8591RotateCount*4 + 1][]byte // for debugging purposes
 }
 
@@ -127,8 +121,6 @@ type PCF8591Driver struct {
 //    i2c.WithBus(int): bus to use with this driver
 //    i2c.WithAddress(int): address to use with this driver
 //    i2c.WithPCF8591AdditionalSkip(uint8): additional skip value to stabilize read
-//    i2c.WithPCF8591RescaleInput(uint8, int, int): set scale values for AI
-//    i2c.WithPCF8591RescaleOutput(int, int): set scale values for AO
 //
 func NewPCF8591Driver(a Connector, options ...func(Config)) *PCF8591Driver {
 	p := &PCF8591Driver{
@@ -137,36 +129,6 @@ func NewPCF8591Driver(a Connector, options ...func(Config)) *PCF8591Driver {
 		Config:         NewConfig(),
 		Commander:      gobot.NewCommander(),
 		additionalSkip: 2,
-	}
-
-	// in case of 32 bit int => -2147483648 to 2147483647, voltage in mV (1V = 1000mV)
-	for i := 0; i < 4; i++ {
-		p.toMin[i] = 0
-		p.toMax[i] = 3300
-	}
-
-	p.fromMin = 0
-	p.fromMax = 3300
-
-	p.rescaleAI = func(value byte, mc pcf8591ModeChan) (milliVolt int) {
-		// return in milliVolt only for the default
-		fromMin := 0
-		fromMax := 255
-		iVal := int(value)
-		if mc.pcf8591IsDiff() {
-			if iVal > 127 {
-				// first bit is set, means negative
-				iVal = iVal - 256
-			}
-			fromMin = -128
-			fromMax = 127
-		}
-		return pcf8591Rescale(iVal, fromMin, fromMax, int(p.toMin[mc.channel]), int(p.toMax[mc.channel]))
-	}
-
-	p.rescaleAO = func(milliVolt int) byte {
-		// given value in milliVolt only for the default
-		return byte(pcf8591Rescale(milliVolt, p.fromMin, p.fromMax, 0, 255))
 	}
 
 	for _, option := range options {
@@ -182,34 +144,24 @@ func WithPCF8591AdditionalSkip(val uint8) func(Config) {
 		p, ok := c.(*PCF8591Driver)
 		if ok {
 			p.additionalSkip = val
-		} else {
-			panic("trying to set skipping additional input bytes value for non-PCF8591Driver")
+		} else if pcf8591Debug {
+			log.Printf("trying to set skipping additional input bytes value for non-PCF8591Driver %v", c)
 		}
 	}
 }
 
-// WithPCF8591RescaleInput option sets the PCF8591 scale values, toMin and toMax value for the given input channel
-func WithPCF8591RescaleInput(channel PCF8591Channel, toMin, toMax int) func(Config) {
+// WithPCF8591ForceWrite option modifies the PCF8591Driver forceRefresh option
+// Setting to true (1) will force refresh operation to register, although there is no change.
+// Normally this is not needed, so default is off (0).
+// When there is something flaky, there is a small chance to stabilize by setting this flag to true.
+// However, setting this flag to true slows down each IO operation up to 100%.
+func WithPCF8591ForceRefresh(val uint8) func(Config) {
 	return func(c Config) {
-		p, ok := c.(*PCF8591Driver)
+		d, ok := c.(*PCF8591Driver)
 		if ok {
-			p.toMin[channel] = toMin
-			p.toMax[channel] = toMax
-		} else {
-			panic("trying to set input scale values for non-PCF8591Driver")
-		}
-	}
-}
-
-// WithPCF8591RescaleOutput option sets the PCF8591 scale values, fromMin and fromMax value for the analog output
-func WithPCF8591RescaleOutput(fromMin, fromMax int) func(Config) {
-	return func(c Config) {
-		p, ok := c.(*PCF8591Driver)
-		if ok {
-			p.fromMin = fromMin
-			p.fromMax = fromMax
-		} else {
-			panic("trying to set output scale values for non-PCF8591Driver")
+			d.forceRefresh = val > 0
+		} else if pcf8591Debug {
+			log.Printf("Trying to set forceRefresh for non-PCF8591Driver %v", c)
 		}
 	}
 }
@@ -294,14 +246,23 @@ func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
 		return 0, err
 	}
 
-	return p.rescaleAI(uval, *mc), err
+	value = int(uval)
+	if mc.pcf8591IsDiff() {
+		if uval > 127 {
+			// first bit is set, means negative
+			value = int(uval) - 256
+		}
+	}
+
+	return value, err
 }
 
 // AnalogWrite writes the given value to the analog output (DAC)
 // Vlsb = (Vref-Vagnd)/256, Vaout = Vagnd+Vlsb*value
-func (p *PCF8591Driver) AnalogWrite(value int) (err error) {
+// implements the aio.AnalogWriter interface, pin is unused here
+func (p *PCF8591Driver) AnalogWrite(pin string, value int) (err error) {
 
-	byteVal := p.rescaleAO(value)
+	byteVal := byte(value)
 
 	if p.lastAnaOut == byteVal {
 		if pcf8591Debug {
@@ -310,7 +271,7 @@ func (p *PCF8591Driver) AnalogWrite(value int) (err error) {
 		return nil
 	}
 
-	ctrlByte := p.lastCtrlByte | pcf8591_ANAON
+	ctrlByte := p.lastCtrlByte | byte(pcf8591_ANAON)
 	err = p.connection.WriteByteData(ctrlByte, byteVal)
 	if err != nil {
 		return err
@@ -328,7 +289,7 @@ func (p *PCF8591Driver) AnalogWrite(value int) (err error) {
 func (p *PCF8591Driver) AnalogOutputState(state bool) (err error) {
 	var ctrlByte uint8
 	if state {
-		ctrlByte = p.lastCtrlByte | pcf8591_ANAON
+		ctrlByte = p.lastCtrlByte | byte(pcf8591_ANAON)
 	} else {
 		ctrlByte = p.lastCtrlByte & ^uint8(pcf8591_ANAON)
 	}
@@ -356,7 +317,7 @@ func PCF8591ParseModeChan(description string) (*pcf8591ModeChan, error) {
 }
 
 func (p *PCF8591Driver) writeCtrlByte(ctrlByte uint8) error {
-	if p.lastCtrlByte != ctrlByte {
+	if p.lastCtrlByte != ctrlByte || p.forceRefresh {
 		if err := p.connection.WriteByte(ctrlByte); err != nil {
 			return err
 		}
@@ -382,17 +343,6 @@ func (p *PCF8591Driver) readBuf(nr uint8, cntBytes uint8) error {
 		p.LastRead[nr] = buf
 	}
 	return nil
-}
-
-func pcf8591Rescale(input, fromMin, fromMax, toMin, toMax int) int {
-
-	if input < fromMin {
-		input = fromMin
-	}
-	if input > fromMax {
-		input = fromMax
-	}
-	return (input-fromMin)*(toMax-toMin)/(fromMax-fromMin) + toMin
 }
 
 func (mc pcf8591ModeChan) pcf8591IsDiff() bool {

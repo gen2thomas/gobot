@@ -46,6 +46,7 @@ Gobot has a extensible system for connecting to hardware devices. The following 
 - SSD1306 OLED Display Controller
 - TSL2561 Digital Luminosity/Lux/Light Sensor
 - Wii Nunchuck Controller
+- Y-40 Brightness/Temperature sensor, Potentiometer, analog input, analog output Driver
 
 More drivers are coming soon...
 

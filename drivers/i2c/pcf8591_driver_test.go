@@ -8,15 +8,16 @@ import (
 
 func initTestPCF8591DriverWithStubbedAdaptor() (*PCF8591Driver, *i2cTestAdaptor) {
 	adaptor := newI2cTestAdaptor()
-	pcf := NewPCF8591Driver(adaptor)
+	pcf := NewPCF8591Driver(adaptor, WithPCF8591With400kbitStabilization(0, 2))
 	pcf.lastCtrlByte = 0xFF // prevent skipping of write
 	pcf.Start()
 	return pcf, adaptor
 }
 
-func TestPCF8591DriverWithAdditionalSkip(t *testing.T) {
-	pcf := NewPCF8591Driver(newI2cTestAdaptor(), WithPCF8591AdditionalSkip(5))
-	gobottest.Assert(t, pcf.additionalSkip, uint8(5))
+func TestPCF8591DriverWithPCF8591With400kbitStabilization(t *testing.T) {
+	pcf := NewPCF8591Driver(newI2cTestAdaptor(), WithPCF8591With400kbitStabilization(5, 6))
+	gobottest.Assert(t, pcf.additionalReadWrite, uint8(5))
+	gobottest.Assert(t, pcf.additionalRead, uint8(6))
 }
 
 func TestPCF8591DriverAnalogReadSingle(t *testing.T) {

@@ -14,8 +14,7 @@ import (
 const pcf8591DefaultAddress = 0x48
 
 const (
-	pcf8591Debug       = false
-	pcf8591RotateCount = 0 // usefully for debugging purposes
+	pcf8591Debug = false
 )
 
 type pcf8591Mode uint8
@@ -83,7 +82,7 @@ var pcf8591ModeMap = map[string]pcf8591ModeChan{
 	"t.2-3": {pcf8591_THREEDIFF, pcf8591_CHAN2},
 }
 
-// PCF8591Driver is a Gobot Driver for the PCF8591 8-bit 4xA/D & 1xD/A converter with i2c interface and 3 address pins.
+// PCF8591Driver is a Gobot Driver for the PCF8591 8-bit 4xA/D & 1xD/A converter with i2c (100 kHz) and 3 address pins.
 // The analog inputs can be used as differential inputs in different ways.
 //
 // All values are linear scaled to 3.3V by default. This can be changed, see example "tinkerboard_pcf8591.go".
@@ -106,11 +105,12 @@ type PCF8591Driver struct {
 	connection Connection
 	Config
 	gobot.Commander
-	lastCtrlByte   byte
-	lastAnaOut     byte
-	additionalSkip uint8
-	forceRefresh   bool
-	LastRead       [pcf8591RotateCount*4 + 1][]byte // for debugging purposes
+	lastCtrlByte        byte
+	lastAnaOut          byte
+	additionalReadWrite uint8
+	additionalRead      uint8
+	forceRefresh        bool
+	LastRead            [][]byte // for debugging purposes
 }
 
 // NewPCF8591Driver creates a new driver with specified i2c interface
@@ -120,15 +120,14 @@ type PCF8591Driver struct {
 // Optional params:
 //    i2c.WithBus(int): bus to use with this driver
 //    i2c.WithAddress(int): address to use with this driver
-//    i2c.WithPCF8591AdditionalSkip(uint8): additional skip value to stabilize read
+//    i2c.WithPCF8591With400kbitStabilization(uint8, uint8): stabilize read in 400 kbit mode
 //
 func NewPCF8591Driver(a Connector, options ...func(Config)) *PCF8591Driver {
 	p := &PCF8591Driver{
-		name:           gobot.DefaultName("PCF8591"),
-		connector:      a,
-		Config:         NewConfig(),
-		Commander:      gobot.NewCommander(),
-		additionalSkip: 2,
+		name:      gobot.DefaultName("PCF8591"),
+		connector: a,
+		Config:    NewConfig(),
+		Commander: gobot.NewCommander(),
 	}
 
 	for _, option := range options {
@@ -138,14 +137,24 @@ func NewPCF8591Driver(a Connector, options ...func(Config)) *PCF8591Driver {
 	return p
 }
 
-// WithPCF8591AdditionalSkip option sets the PCF8591 additionalSkip value
-func WithPCF8591AdditionalSkip(val uint8) func(Config) {
+// WithPCF8591With400kbitStabilisation option sets the PCF8591 additionalReadWrite and additionalRead value
+func WithPCF8591With400kbitStabilization(additionalReadWrite, additionalRead int) func(Config) {
 	return func(c Config) {
 		p, ok := c.(*PCF8591Driver)
 		if ok {
-			p.additionalSkip = val
+			if additionalReadWrite < 0 {
+				additionalReadWrite = 1 // works in most cases
+			}
+			if additionalRead < 0 {
+				additionalRead = 2 // works in most cases
+			}
+			p.additionalReadWrite = uint8(additionalReadWrite)
+			p.additionalRead = uint8(additionalRead)
+			if pcf8591Debug {
+				log.Printf("400 kbit stabilization for PCF8591Driver set rw: %d, r: %d", p.additionalReadWrite, p.additionalRead)
+			}
 		} else if pcf8591Debug {
-			log.Printf("trying to set skipping additional input bytes value for non-PCF8591Driver %v", c)
+			log.Printf("trying to set 400 kbit stabilization for non-PCF8591Driver %v", c)
 		}
 	}
 }
@@ -204,12 +213,13 @@ func (p *PCF8591Driver) Halt() (err error) {
 // After the channel was switched this means the value of the previous read channel.
 // After power on, the first byte read will be 80h, because the read is one cycle behind.
 //
-// Important note:
+// Important note for 440 kbit mode:
 // With a bus speed of 100 kBit/sec, the ADC conversion has ~80 us + ACK (time to transfer the previous value).
-// This time seems to be a little bit to small (datasheet 90 us).
+// This time is the limit for A-D conversion (datasheet 90 us).
 // An i2c bus extender (LTC4311) don't fix it (it seems rather the opposite).
 //
 // This leads to following behavior:
+// * the control byte is not written correctly
 // * the transition process takes an additional cycle, very often
 // * some circuits takes one cycle longer transition time in addition
 // * reading more than one byte by Read([]byte), e.g. to calculate an average, is not sufficient,
@@ -226,26 +236,34 @@ func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
 	ctrlByte := p.lastCtrlByte & ^uint8(pcf8591_ADMASK)
 	// set to current channel and mode, AI must be off, because we need reading twice
 	ctrlByte = ctrlByte | uint8(mc.mode) | uint8(mc.channel) & ^uint8(pcf8591_AION)
-	if err = p.writeCtrlByte(ctrlByte); err != nil {
-		return 0, err
-	}
 
-	// initiate read but skip some bytes
-	for i := uint8(0); i < pcf8591RotateCount*4+1; i++ {
-		if err := p.readBuf(i, 1+p.additionalSkip); err != nil {
+	var uval byte
+	p.LastRead = make([][]byte, p.additionalReadWrite+1)
+	// repeated write and read cycle to stabilize value in 400 kbit mode
+	for writeReadCycle := uint8(1); writeReadCycle <= p.additionalReadWrite+1; writeReadCycle++ {
+		if err = p.writeCtrlByte(ctrlByte, p.forceRefresh || writeReadCycle > 1); err != nil {
 			return 0, err
+		}
+
+		// initiate read but skip some bytes
+		if err := p.readBuf(writeReadCycle, 1+p.additionalRead); err != nil {
+			return 0, err
+		}
+
+		// additional relax time
+		time.Sleep(1 * time.Millisecond)
+
+		// real used read
+		if uval, err = p.connection.ReadByte(); err != nil {
+			return 0, err
+		}
+
+		if pcf8591Debug {
+			p.LastRead[writeReadCycle-1] = append(p.LastRead[writeReadCycle-1], uval)
 		}
 	}
 
-	// additional relax time
-	time.Sleep(1 * time.Millisecond)
-
-	// real used read
-	uval, err := p.connection.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-
+	// prepare return value
 	value = int(uval)
 	if mc.pcf8591IsDiff() {
 		if uval > 127 {
@@ -294,7 +312,7 @@ func (p *PCF8591Driver) AnalogOutputState(state bool) (err error) {
 		ctrlByte = p.lastCtrlByte & ^uint8(pcf8591_ANAON)
 	}
 
-	if err = p.writeCtrlByte(ctrlByte); err != nil {
+	if err = p.writeCtrlByte(ctrlByte, p.forceRefresh); err != nil {
 		return err
 	}
 	return nil
@@ -316,8 +334,8 @@ func PCF8591ParseModeChan(description string) (*pcf8591ModeChan, error) {
 	return &mc, nil
 }
 
-func (p *PCF8591Driver) writeCtrlByte(ctrlByte uint8) error {
-	if p.lastCtrlByte != ctrlByte || p.forceRefresh {
+func (p *PCF8591Driver) writeCtrlByte(ctrlByte uint8, forceRefresh bool) error {
+	if p.lastCtrlByte != ctrlByte || forceRefresh {
 		if err := p.connection.WriteByte(ctrlByte); err != nil {
 			return err
 		}
@@ -340,7 +358,7 @@ func (p *PCF8591Driver) readBuf(nr uint8, cntBytes uint8) error {
 		return fmt.Errorf("Not enough bytes (%d of %d) read", cntRead, len(buf))
 	}
 	if pcf8591Debug {
-		p.LastRead[nr] = buf
+		p.LastRead[nr-1] = buf
 	}
 	return nil
 }

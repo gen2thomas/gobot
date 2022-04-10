@@ -3,10 +3,14 @@ package gpio
 import (
 	"errors"
 	"fmt"
+	"log"
+	"sync"
 	"time"
 
 	"gobot.io/x/gobot"
 )
+
+const checkBusyFlag = false
 
 const (
 	HD44780_CLEARDISPLAY        = 0x01
@@ -73,12 +77,14 @@ type HD44780Driver struct {
 	busMode     HD44780BusMode
 	pinRS       *DirectPinDriver
 	pinEN       *DirectPinDriver
+	pinRW       *DirectPinDriver
 	pinDataBits []*DirectPinDriver
 	displayCtrl int
 	displayFunc int
 	displayMode int
 	connection  gobot.Connection
 	gobot.Commander
+	mutex *sync.Mutex
 }
 
 // NewHD44780Driver return a new HD44780Driver
@@ -99,6 +105,7 @@ func NewHD44780Driver(a gobot.Connection, cols int, rows int, busMode HD44780Bus
 		pinEN:      NewDirectPinDriver(a, pinEN),
 		connection: a,
 		Commander:  gobot.NewCommander(),
+		mutex:      &sync.Mutex{},
 	}
 
 	if h.busMode == HD44780_4BITMODE {
@@ -154,37 +161,41 @@ func (h *HD44780Driver) Start() (err error) {
 
 	time.Sleep(50 * time.Millisecond)
 
+	if err := h.activateWriteMode(); err != nil {
+		return err
+	}
+
 	if h.busMode == HD44780_4BITMODE {
-		if err := h.writeBits(0x03); err != nil {
+		if err := h.writeDataPins(0x03); err != nil {
 			return err
 		}
 		time.Sleep(5 * time.Millisecond)
 
-		if err := h.writeBits(0x03); err != nil {
+		if err := h.writeDataPins(0x03); err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Microsecond)
 
-		if err := h.writeBits(0x03); err != nil {
+		if err := h.writeDataPins(0x03); err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Microsecond)
 
-		if err := h.writeBits(0x02); err != nil {
+		if err := h.writeDataPins(0x02); err != nil {
 			return err
 		}
 	} else {
-		if err := h.SendCommand(0x30); err != nil {
+		if err := h.SendCommand(0x30, "start"); err != nil {
 			return err
 		}
 		time.Sleep(5 * time.Millisecond)
 
-		if err := h.SendCommand(0x30); err != nil {
+		if err := h.SendCommand(0x30, "start"); err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Microsecond)
 
-		if err := h.SendCommand(0x30); err != nil {
+		if err := h.SendCommand(0x30, "start"); err != nil {
 			return err
 		}
 	}
@@ -206,17 +217,22 @@ func (h *HD44780Driver) Start() (err error) {
 	h.displayCtrl = HD44780_DISPLAYON | HD44780_BLINKOFF | HD44780_CURSOROFF
 	h.displayMode = HD44780_ENTRYLEFT | HD44780_ENTRYSHIFTDECREMENT
 
-	if err := h.SendCommand(HD44780_DISPLAYCONTROL | h.displayCtrl); err != nil {
+	if err := h.SendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "start"); err != nil {
 		return err
 	}
-	if err := h.SendCommand(HD44780_FUNCTIONSET | h.displayFunc); err != nil {
+	if err := h.SendCommand(HD44780_FUNCTIONSET|h.displayFunc, "start"); err != nil {
 		return err
 	}
-	if err := h.SendCommand(HD44780_ENTRYMODESET | h.displayMode); err != nil {
+	if err := h.SendCommand(HD44780_ENTRYMODESET|h.displayMode, "start"); err != nil {
 		return err
 	}
 
 	return h.Clear()
+}
+
+// SetRWPin initializes the RW pin
+func (h *HD44780Driver) SetRWPin(pinRW string) {
+	h.pinRW = NewDirectPinDriver(h.connection, pinRW)
 }
 
 // Write output text to the display
@@ -245,7 +261,7 @@ func (h *HD44780Driver) Write(message string) (err error) {
 
 // Clear clear the display
 func (h *HD44780Driver) Clear() (err error) {
-	if err := h.SendCommand(HD44780_CLEARDISPLAY); err != nil {
+	if err := h.SendCommand(HD44780_CLEARDISPLAY, "Clear"); err != nil {
 		return err
 	}
 	time.Sleep(2 * time.Millisecond)
@@ -255,7 +271,7 @@ func (h *HD44780Driver) Clear() (err error) {
 
 // Home return cursor to home
 func (h *HD44780Driver) Home() (err error) {
-	if err := h.SendCommand(HD44780_RETURNHOME); err != nil {
+	if err := h.SendCommand(HD44780_RETURNHOME, "Home"); err != nil {
 		return err
 	}
 	time.Sleep(2 * time.Millisecond)
@@ -269,7 +285,7 @@ func (h *HD44780Driver) SetCursor(col int, row int) (err error) {
 		return fmt.Errorf("Invalid position value (%d, %d), range (%d, %d)", col, row, h.cols-1, h.rows-1)
 	}
 
-	return h.SendCommand(HD44780_SETDDRAMADDR | col + h.rowOffsets[row])
+	return h.SendCommand(HD44780_SETDDRAMADDR|col+h.rowOffsets[row], "SetCursor")
 }
 
 // Display turn the display on and off
@@ -280,7 +296,7 @@ func (h *HD44780Driver) Display(on bool) (err error) {
 		h.displayCtrl &= ^HD44780_DISPLAYON
 	}
 
-	return h.SendCommand(HD44780_DISPLAYCONTROL | h.displayCtrl)
+	return h.SendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "Display on/off")
 }
 
 // Cursor turn the cursor on and off
@@ -291,7 +307,7 @@ func (h *HD44780Driver) Cursor(on bool) (err error) {
 		h.displayCtrl &= ^HD44780_CURSORON
 	}
 
-	return h.SendCommand(HD44780_DISPLAYCONTROL | h.displayCtrl)
+	return h.SendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "Cursor on/off")
 }
 
 // Blink turn the blink on and off
@@ -302,57 +318,74 @@ func (h *HD44780Driver) Blink(on bool) (err error) {
 		h.displayCtrl &= ^HD44780_BLINKON
 	}
 
-	return h.SendCommand(HD44780_DISPLAYCONTROL | h.displayCtrl)
+	return h.SendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "Blink on/off")
 }
 
 // ScrollLeft scroll text left
 func (h *HD44780Driver) ScrollLeft() (err error) {
-	return h.SendCommand(HD44780_CURSORSHIFT | HD44780_DISPLAYMOVE | HD44780_MOVELEFT)
+	return h.SendCommand(HD44780_CURSORSHIFT|HD44780_DISPLAYMOVE|HD44780_MOVELEFT, "Scroll left")
 }
 
 // ScrollRight scroll text right
 func (h *HD44780Driver) ScrollRight() (err error) {
-	return h.SendCommand(HD44780_CURSORSHIFT | HD44780_DISPLAYMOVE | HD44780_MOVERIGHT)
+	return h.SendCommand(HD44780_CURSORSHIFT|HD44780_DISPLAYMOVE|HD44780_MOVERIGHT, "Scroll right")
 }
 
 // LeftToRight display text from left to right
 func (h *HD44780Driver) LeftToRight() (err error) {
 	h.displayMode |= HD44780_ENTRYLEFT
-	return h.SendCommand(HD44780_ENTRYMODESET | h.displayMode)
+	return h.SendCommand(HD44780_ENTRYMODESET|h.displayMode, "Left to right")
 }
 
 // RightToLeft display text from right to left
 func (h *HD44780Driver) RightToLeft() (err error) {
 	h.displayMode &= ^HD44780_ENTRYLEFT
-	return h.SendCommand(HD44780_ENTRYMODESET | h.displayMode)
+	return h.SendCommand(HD44780_ENTRYMODESET|h.displayMode, "Right to left")
 }
 
 // SendCommand send control command
-func (h *HD44780Driver) SendCommand(data int) (err error) {
+func (h *HD44780Driver) SendCommand(data int, sender string) (err error) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+	if err := h.waitForBusyFlag(sender); err != nil {
+		return err
+	}
+	if err := h.activateWriteMode(); err != nil {
+		return err
+	}
 	if err := h.pinRS.Off(); err != nil {
 		return err
 	}
 	if h.busMode == HD44780_4BITMODE {
-		if err := h.writeBits(data >> 4); err != nil {
+		if err := h.writeDataPins(data >> 4); err != nil {
 			return err
 		}
 	}
 
-	return h.writeBits(data)
+	return h.writeDataPins(data)
 }
 
 // WriteChar output a character to the display
 func (h *HD44780Driver) WriteChar(data int) (err error) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+	if err := h.waitForBusyFlag("WriteChar"); err != nil {
+		return err
+	}
+	if err := h.activateWriteMode(); err != nil {
+		return err
+	}
+
 	if err := h.pinRS.On(); err != nil {
 		return err
 	}
 	if h.busMode == HD44780_4BITMODE {
-		if err := h.writeBits(data >> 4); err != nil {
+		if err := h.writeDataPins(data >> 4); err != nil {
 			return err
 		}
 	}
 
-	return h.writeBits(data)
+	return h.writeDataPins(data)
 }
 
 // CreateChar create custom character
@@ -361,7 +394,7 @@ func (h *HD44780Driver) CreateChar(pos int, charMap [8]byte) (err error) {
 		return errors.New("can't set a custom character at a position greater than 7")
 	}
 
-	if err := h.SendCommand(HD44780_SETCGRAMADDR | (pos << 3)); err != nil {
+	if err := h.SendCommand(HD44780_SETCGRAMADDR|(pos<<3), "CreateChar"); err != nil {
 		return err
 	}
 
@@ -374,8 +407,138 @@ func (h *HD44780Driver) CreateChar(pos int, charMap [8]byte) (err error) {
 	return nil
 }
 
-// WriteBits output data to data-pins
-func (h *HD44780Driver) writeBits(data int) (err error) {
+func (h *HD44780Driver) ReadAcAndDr() (ac int, dr int, err error) {
+	// the read value represents the busy flag and address counter
+	// BF  AC6 AC5 AC4 | AC3 AC2 AC1 AC0
+	//
+	// followed by the data register
+	// DR7 DR6 DR5 DR4 | DR3 DR2 DR1 DR0
+	//
+	// no need to change RS, RW after that, because
+	// this must be done by next write or read
+
+	if ac, err = h.waitForBusyFlagAndReadAddressCounter(false, "Read AC & DR"); err != nil {
+		return
+	}
+
+	if dr, err = h.readDataRegister(); err != nil {
+		return
+	}
+
+	log.Printf("AC: 0x%X, DR: 0x%X", ac, dr)
+
+	return
+}
+
+func (h *HD44780Driver) waitForBusyFlag(sender string) (err error) {
+	_, err = h.waitForBusyFlagAndReadAddressCounter(true, sender)
+	return
+}
+
+func (h *HD44780Driver) waitForBusyFlagAndReadAddressCounter(onlyBF bool, sender string) (result int, err error) {
+	// the busy flag is the highest bit (D7) in read mode
+	//
+	// sequence:
+	// RS = "0", RW = "1" (means read)
+	// EN = "0", wait, EN = "1"
+	// read pin --> wait, read again, until = 0
+	// read AC or EN = "0", wait, EN = "1", wait, EN ="0" (to simulate AC-read)
+	// store to AC
+	//
+	if h.pinRW == nil || !checkBusyFlag {
+		return
+	}
+	if err = h.pinRS.Off(); err != nil {
+		return
+	}
+	// activate read mode
+	if err = h.pinRW.On(); err != nil {
+		return
+	}
+	if err = h.pinEN.On(); err != nil {
+		return
+	}
+	// repeat until BF is "0"
+
+	i := 1
+	maxWait := 20
+	var waitTime time.Duration
+	for ; i <= maxWait; i++ {
+		bfPin := 7
+		var val int
+		if h.busMode == HD44780_4BITMODE {
+			bfPin = 3
+		}
+		if val, err = h.pinDataBits[bfPin].DigitalRead(); err != nil {
+			return
+		}
+		if (val & 0x01) == 0 {
+			break
+		}
+		log.Printf("busy flag is set %d/%d for %s", i, maxWait, sender)
+		waitTime = time.Duration(i*i) * time.Millisecond
+		time.Sleep(waitTime)
+	}
+
+	if !onlyBF {
+		if result, err = h.readDataPins(); err != nil {
+			return
+		}
+		if h.busMode == HD44780_4BITMODE {
+			var data int
+			if data, err = h.readDataPins(); err != nil {
+				return
+			}
+			result = result<<4 | data
+		}
+	} else {
+		if err = h.pinEN.Off(); err != nil {
+			return
+		}
+		time.Sleep(1 * time.Microsecond)
+		if h.busMode == HD44780_4BITMODE {
+			// simulate reading of AC
+			if err = h.triggerFalling(); err != nil {
+				return
+			}
+		}
+	}
+
+	if i >= maxWait {
+		return 0, fmt.Errorf("busy flag remains on after wait %s", waitTime)
+	}
+	return
+}
+
+func (h *HD44780Driver) readDataRegister() (result int, err error) {
+	// sequence:
+	// RW = "1", RS = "1", EN ="1"
+	// read data pins, EN ="0"
+	//
+	// store to DR
+	//
+	// RW is still "1"
+	if err = h.pinRS.On(); err != nil {
+		return
+	}
+	if err = h.pinEN.On(); err != nil {
+		return
+	}
+	if result, err = h.readDataPins(); err != nil {
+		return
+	}
+	if h.busMode == HD44780_4BITMODE {
+		var data int
+		if data, err = h.readDataPins(); err != nil {
+			return
+		}
+		result = result<<4 | data
+	}
+
+	return
+}
+
+func (h *HD44780Driver) writeDataPins(data int) (err error) {
 	for i, pin := range h.pinDataBits {
 		if ((data >> i) & 0x01) == 0x01 {
 			if err := pin.On(); err != nil {
@@ -387,17 +550,29 @@ func (h *HD44780Driver) writeBits(data int) (err error) {
 			}
 		}
 	}
-
-	return h.triggerPulse()
+	return h.triggerFalling()
 }
 
-// triggerPulse trigger enable pulse
-func (h *HD44780Driver) triggerPulse() (err error) {
-	if err := h.pinEN.Off(); err != nil {
-		return err
+func (h *HD44780Driver) activateWriteMode() (err error) {
+	if h.pinRW == nil {
+		return
 	}
-	time.Sleep(1 * time.Microsecond)
+	return h.pinRW.Off()
+}
 
+func (h *HD44780Driver) readDataPins() (data int, err error) {
+	var val int
+	for i, pin := range h.pinDataBits {
+		if val, err = pin.DigitalRead(); err != nil {
+			return
+		}
+		data = data | (val&0x1)<<i
+	}
+	return data, h.triggerFalling()
+}
+
+// triggerFalling trigger enable pulse
+func (h *HD44780Driver) triggerFalling() (err error) {
 	if err := h.pinEN.On(); err != nil {
 		return err
 	}
@@ -406,7 +581,8 @@ func (h *HD44780Driver) triggerPulse() (err error) {
 	if err := h.pinEN.Off(); err != nil {
 		return err
 	}
-	time.Sleep(1 * time.Microsecond)
+	// fastest write operation at 190kHz mode takes 53us
+	time.Sleep(60 * time.Microsecond)
 
 	return nil
 }

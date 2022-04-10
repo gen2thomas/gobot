@@ -21,15 +21,21 @@ type adafruit1109PortPin struct {
 type Adafruit1109Driver struct {
 	name string
 	*MCP23017Driver
-	redpin    adafruit1109PortPin
-	greenpin  adafruit1109PortPin
-	bluepin   adafruit1109PortPin
-	selectpin adafruit1109PortPin
-	uppin     adafruit1109PortPin
-	downpin   adafruit1109PortPin
-	leftpin   adafruit1109PortPin
-	rightpin  adafruit1109PortPin
-	rwpin     adafruit1109PortPin
+	redPin    adafruit1109PortPin
+	greenPin  adafruit1109PortPin
+	bluePin   adafruit1109PortPin
+	selectPin adafruit1109PortPin
+	upPin     adafruit1109PortPin
+	downPin   adafruit1109PortPin
+	leftPin   adafruit1109PortPin
+	rightPin  adafruit1109PortPin
+	rwPin     adafruit1109PortPin
+	rsPin     adafruit1109PortPin
+	enPin     adafruit1109PortPin
+	dataPinD4 adafruit1109PortPin
+	dataPinD5 adafruit1109PortPin
+	dataPinD6 adafruit1109PortPin
+	dataPinD7 adafruit1109PortPin
 	*gpio.HD44780Driver
 }
 
@@ -47,31 +53,37 @@ func NewAdafruit1109Driver(a Connector, options ...func(Config)) *Adafruit1109Dr
 	m := &Adafruit1109Driver{
 		name:           gobot.DefaultName("Adafruit1109"),
 		MCP23017Driver: mcp,
-		redpin:         adafruit1109PortPin{"A", 6},
-		greenpin:       adafruit1109PortPin{"A", 7},
-		bluepin:        adafruit1109PortPin{"B", 0},
-		selectpin:      adafruit1109PortPin{"A", 0},
-		uppin:          adafruit1109PortPin{"A", 3},
-		downpin:        adafruit1109PortPin{"A", 2},
-		leftpin:        adafruit1109PortPin{"A", 4},
-		rightpin:       adafruit1109PortPin{"A", 1},
-		rwpin:          adafruit1109PortPin{"B", 6},
+		redPin:         adafruit1109PortPin{"A", 6},
+		greenPin:       adafruit1109PortPin{"A", 7},
+		bluePin:        adafruit1109PortPin{"B", 0},
+		selectPin:      adafruit1109PortPin{"A", 0},
+		upPin:          adafruit1109PortPin{"A", 3},
+		downPin:        adafruit1109PortPin{"A", 2},
+		leftPin:        adafruit1109PortPin{"A", 4},
+		rightPin:       adafruit1109PortPin{"A", 1},
+		rwPin:          adafruit1109PortPin{"B", 6},
+		rsPin:          adafruit1109PortPin{"B", 7},
+		enPin:          adafruit1109PortPin{"B", 5},
+		dataPinD4:      adafruit1109PortPin{"B", 4},
+		dataPinD5:      adafruit1109PortPin{"B", 3},
+		dataPinD6:      adafruit1109PortPin{"B", 2},
+		dataPinD7:      adafruit1109PortPin{"B", 1},
 	}
 	// mapping for HD44780 to MCP23017 port and IO, 4-Bit data
 	dataPins := gpio.HD44780DataPin{
-		D4: "B_4",
-		D5: "B_3",
-		D6: "B_2",
-		D7: "B_1",
+		D4: m.dataPinD4.String(),
+		D5: m.dataPinD5.String(),
+		D6: m.dataPinD6.String(),
+		D7: m.dataPinD7.String(),
 	}
-	rsPin := "B_7"
-	enPin := "B_5"
+
 	//rwPin := "B_6" not mapped in HD44780 driver
 	// at test initialization, there seems rows and columns be switched
 	// but inside the driver the row is used as row and col as column
 	rows := 2
 	columns := 16
-	lcd := gpio.NewHD44780Driver(m, columns, rows, gpio.HD44780_4BITMODE, rsPin, enPin, dataPins)
+	lcd := gpio.NewHD44780Driver(m, columns, rows, gpio.HD44780_4BITMODE, m.rsPin.String(), m.enPin.String(), dataPins)
+	lcd.SetRWPin(m.rwPin.String())
 	m.HD44780Driver = lcd
 	return m
 }
@@ -105,19 +117,19 @@ func (m *Adafruit1109Driver) Start() (err error) {
 	}
 
 	// button pins are inputs, has inverse logic and needs pull up
-	if err := m.adafruit1109InitButton(m.selectpin); err != nil {
+	if err := m.adafruit1109InitButton(m.selectPin); err != nil {
 		return err
 	}
-	if err := m.adafruit1109InitButton(m.uppin); err != nil {
+	if err := m.adafruit1109InitButton(m.upPin); err != nil {
 		return err
 	}
-	if err := m.adafruit1109InitButton(m.downpin); err != nil {
+	if err := m.adafruit1109InitButton(m.downPin); err != nil {
 		return err
 	}
-	if err := m.adafruit1109InitButton(m.leftpin); err != nil {
+	if err := m.adafruit1109InitButton(m.leftPin); err != nil {
 		return err
 	}
-	if err := m.adafruit1109InitButton(m.rightpin); err != nil {
+	if err := m.adafruit1109InitButton(m.rightPin); err != nil {
 		return err
 	}
 
@@ -126,7 +138,7 @@ func (m *Adafruit1109Driver) Start() (err error) {
 		return err
 	}
 	// set rw pin to write
-	if err := m.WriteGPIO(m.rwpin.pin, 0x00, m.rwpin.port); err != nil {
+	if err := m.writePin(m.rwPin, 0x00); err != nil {
 		return err
 	}
 	if adafruit1109Debug {
@@ -140,7 +152,19 @@ func (m *Adafruit1109Driver) Start() (err error) {
 // The given id is the same as defined in dataPins and has the syntax "<port>_<pin>".
 func (m *Adafruit1109Driver) DigitalWrite(id string, val byte) (err error) {
 	portio := adafruit1109ParseId(id)
-	return m.WriteGPIO(portio.pin, val, portio.port)
+	return m.writePin(portio, val)
+}
+
+// DigitalReader interface
+// This is called by HD44780 driver to read one gpio output. We redirect the call to the i2c driver MCP23017.
+// The given id is the same as defined in dataPins and has the syntax "<port>_<pin>".
+func (m *Adafruit1109Driver) DigitalRead(id string) (val int, err error) {
+	portio := adafruit1109ParseId(id)
+	uval, err := m.readPin(portio)
+	if err != nil {
+		return 0, err
+	}
+	return int(uval), err
 }
 
 // Connector interface, haven't found any adaptor which implements this with more content
@@ -153,9 +177,9 @@ func (m *Adafruit1109Driver) SetRGB(r, g, b bool) error {
 	if adafruit1109Debug {
 		log.Printf("## SetRGB %t, %t, %t ##", r, g, b)
 	}
-	rio := m.redpin
-	gio := m.greenpin
-	bio := m.bluepin
+	rio := m.redPin
+	gio := m.greenPin
+	bio := m.bluePin
 	rval := uint8(0x1)
 	gval := uint8(0x1)
 	bval := uint8(0x1)
@@ -169,38 +193,50 @@ func (m *Adafruit1109Driver) SetRGB(r, g, b bool) error {
 		bval = 0x00
 	}
 
-	if err := m.WriteGPIO(rio.pin, rval, rio.port); err != nil {
+	if err := m.writePin(rio, rval); err != nil {
 		return err
 	}
 
-	if err := m.WriteGPIO(gio.pin, gval, gio.port); err != nil {
+	if err := m.writePin(gio, gval); err != nil {
 		return err
 	}
 
-	if err := m.WriteGPIO(bio.pin, bval, bio.port); err != nil {
+	if err := m.writePin(bio, bval); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (m *Adafruit1109Driver) SelectButton() (uint8, error) {
-	return m.ReadGPIO(m.selectpin.pin, m.selectpin.port)
+	return m.readPin(m.selectPin)
 }
 
 func (m *Adafruit1109Driver) UpButton() (uint8, error) {
-	return m.ReadGPIO(m.uppin.pin, m.uppin.port)
+	return m.readPin(m.upPin)
 }
 
 func (m *Adafruit1109Driver) DownButton() (uint8, error) {
-	return m.ReadGPIO(m.downpin.pin, m.downpin.port)
+	return m.readPin(m.downPin)
 }
 
 func (m *Adafruit1109Driver) LeftButton() (uint8, error) {
-	return m.ReadGPIO(m.leftpin.pin, m.leftpin.port)
+	return m.readPin(m.leftPin)
 }
 
 func (m *Adafruit1109Driver) RightButton() (uint8, error) {
-	return m.ReadGPIO(m.rightpin.pin, m.rightpin.port)
+	return m.readPin(m.rightPin)
+}
+
+func (m *Adafruit1109Driver) writePin(ap adafruit1109PortPin, val uint8) (err error) {
+	return m.WriteGPIO(ap.pin, val, ap.port)
+}
+
+func (m *Adafruit1109Driver) readPin(ap adafruit1109PortPin) (uint8, error) {
+	return m.ReadGPIO(ap.pin, ap.port)
+}
+
+func (ap *adafruit1109PortPin) String() string {
+	return fmt.Sprintf("%s_%d", ap.port, ap.pin)
 }
 
 func adafruit1109ParseId(id string) adafruit1109PortPin {

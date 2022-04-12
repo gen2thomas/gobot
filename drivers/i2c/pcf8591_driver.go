@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"gobot.io/x/gobot"
@@ -110,7 +111,8 @@ type PCF8591Driver struct {
 	additionalReadWrite uint8
 	additionalRead      uint8
 	forceRefresh        bool
-	LastRead            [][]byte // for debugging purposes
+	LastRead            [][]byte    // for debugging purposes
+	mutex               *sync.Mutex // mutex needed to ensure write-read sequence of AnalogRead() is not interrupted
 }
 
 // NewPCF8591Driver creates a new driver with specified i2c interface
@@ -128,6 +130,7 @@ func NewPCF8591Driver(a Connector, options ...func(Config)) *PCF8591Driver {
 		connector: a,
 		Config:    NewConfig(),
 		Commander: gobot.NewCommander(),
+		mutex:     &sync.Mutex{},
 	}
 
 	for _, option := range options {
@@ -227,6 +230,9 @@ func (p *PCF8591Driver) Halt() (err error) {
 //
 // So, for default, we drop the first three bytes to get the right value.
 func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	mc, err := PCF8591ParseModeChan(description)
 	if err != nil {
 		return 0, err
@@ -279,6 +285,8 @@ func (p *PCF8591Driver) AnalogRead(description string) (value int, err error) {
 // Vlsb = (Vref-Vagnd)/256, Vaout = Vagnd+Vlsb*value
 // implements the aio.AnalogWriter interface, pin is unused here
 func (p *PCF8591Driver) AnalogWrite(pin string, value int) (err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
 	byteVal := byte(value)
 
@@ -305,6 +313,9 @@ func (p *PCF8591Driver) AnalogWrite(pin string, value int) (err error) {
 // and the auto increment mode the output should not switched off.
 // Otherwise conversion errors could occur.
 func (p *PCF8591Driver) AnalogOutputState(state bool) (err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var ctrlByte uint8
 	if state {
 		ctrlByte = p.lastCtrlByte | byte(pcf8591_ANAON)

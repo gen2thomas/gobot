@@ -156,7 +156,7 @@ func (m *Adafruit1109Driver) DigitalWrite(id string, val byte) (err error) {
 }
 
 // DigitalReader interface
-// This is called by HD44780 driver to read one gpio output. We redirect the call to the i2c driver MCP23017.
+// This is called by HD44780 driver to read one gpio input. We redirect the call to the i2c driver MCP23017.
 // The given id is the same as defined in dataPins and has the syntax "<port>_<pin>".
 func (m *Adafruit1109Driver) DigitalRead(id string) (val int, err error) {
 	portio := adafruit1109ParseId(id)

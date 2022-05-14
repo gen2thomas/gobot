@@ -13,7 +13,7 @@ var _ sysfs.PWMPinner = (*PWMPin)(nil)
 func TestPwmPin(t *testing.T) {
 	pin := NewPWMPin("1")
 	gobottest.Assert(t, pin.Export(), nil)
-	gobottest.Assert(t, pin.Enable(true), nil)
+	gobottest.Assert(t, pin.SetEnable(true), nil)
 	val, _ := pin.Polarity()
 	gobottest.Assert(t, val, "normal")
 	gobottest.Assert(t, pin.InvertPolarity(true), nil)

@@ -227,7 +227,7 @@ func (b *Adaptor) PWMPin(pin string) (sysfsPin sysfs.PWMPinner, err error) {
 		if err = newPin.SetPeriod(pwmDefaultPeriod); err != nil {
 			return
 		}
-		if err = newPin.Enable(true); err != nil {
+		if err = newPin.SetEnable(true); err != nil {
 			return
 		}
 		b.pwmPins[pin] = newPin

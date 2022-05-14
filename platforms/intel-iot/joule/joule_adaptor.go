@@ -68,7 +68,7 @@ func (e *Adaptor) Finalize() (err error) {
 	}
 	for _, pin := range e.pwmPins {
 		if pin != nil {
-			if errs := pin.Enable(false); errs != nil {
+			if errs := pin.SetEnable(false); errs != nil {
 				err = multierror.Append(err, errs)
 			}
 			if errs := pin.Unexport(); errs != nil {
@@ -162,7 +162,7 @@ func (e *Adaptor) PWMPin(pin string) (sysfsPin sysfs.PWMPinner, err error) {
 			if err = e.pwmPins[sysPin.pwmPin].SetPeriod(10000000); err != nil {
 				return
 			}
-			if err = e.pwmPins[sysPin.pwmPin].Enable(true); err != nil {
+			if err = e.pwmPins[sysPin.pwmPin].SetEnable(true); err != nil {
 				return
 			}
 		}

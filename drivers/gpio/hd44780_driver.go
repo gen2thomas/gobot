@@ -10,8 +10,6 @@ import (
 	"gobot.io/x/gobot"
 )
 
-const checkBusyFlag = false
-
 const (
 	HD44780_CLEARDISPLAY        = 0x01
 	HD44780_RETURNHOME          = 0x02
@@ -70,19 +68,20 @@ type HD44780DataPin struct {
 // HD44780Driver is the gobot driver for the HD44780 LCD controller
 // Datasheet: https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
 type HD44780Driver struct {
-	name        string
-	cols        int
-	rows        int
-	rowOffsets  [4]int
-	busMode     HD44780BusMode
-	pinRS       *DirectPinDriver
-	pinEN       *DirectPinDriver
-	pinRW       *DirectPinDriver
-	pinDataBits []*DirectPinDriver
-	displayCtrl int
-	displayFunc int
-	displayMode int
-	connection  gobot.Connection
+	name          string
+	cols          int
+	rows          int
+	rowOffsets    [4]int
+	busMode       HD44780BusMode
+	pinRS         *DirectPinDriver
+	pinEN         *DirectPinDriver
+	pinRW         *DirectPinDriver
+	pinDataBits   []*DirectPinDriver
+	displayCtrl   int
+	displayFunc   int
+	displayMode   int
+	checkBusyFlag bool
+	connection    gobot.Connection
 	gobot.Commander
 	mutex *sync.Mutex // mutex is needed for sequences, like CreateChar(), Write(), Start()
 }
@@ -134,6 +133,27 @@ func NewHD44780Driver(a gobot.Connection, cols int, rows int, busMode HD44780Bus
 	/* TODO : Add commands */
 
 	return h
+}
+
+// SetRWPin initializes the RW pin
+func (h *HD44780Driver) SetRWPin(pinRW string) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	log.Println("SetRWPin called")
+	h.pinRW = NewDirectPinDriver(h.connection, pinRW)
+}
+
+// SetBusyFlagCheck to the given state
+func (h *HD44780Driver) SetBusyFlagCheck(state bool) error {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if state && h.pinRW == nil {
+		return fmt.Errorf("The pinRW must be set for busy flag check. Please use SetRWPin() before.")
+	}
+	h.checkBusyFlag = state
+	return nil
 }
 
 // Halt implements the Driver interface
@@ -188,17 +208,17 @@ func (h *HD44780Driver) Start() (err error) {
 			return err
 		}
 	} else {
-		if err := h.sendCommand(0x30, "start"); err != nil {
+		if err := h.sendCommand(0x30, "start1"); err != nil {
 			return err
 		}
 		time.Sleep(5 * time.Millisecond)
 
-		if err := h.sendCommand(0x30, "start"); err != nil {
+		if err := h.sendCommand(0x30, "start2"); err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Microsecond)
 
-		if err := h.sendCommand(0x30, "start"); err != nil {
+		if err := h.sendCommand(0x30, "start3"); err != nil {
 			return err
 		}
 	}
@@ -220,25 +240,19 @@ func (h *HD44780Driver) Start() (err error) {
 	h.displayCtrl = HD44780_DISPLAYON | HD44780_BLINKOFF | HD44780_CURSOROFF
 	h.displayMode = HD44780_ENTRYLEFT | HD44780_ENTRYSHIFTDECREMENT
 
-	if err := h.sendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "start"); err != nil {
+	time.Sleep(1 * time.Millisecond)
+	if err := h.sendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "start4"); err != nil {
 		return err
 	}
-	if err := h.sendCommand(HD44780_FUNCTIONSET|h.displayFunc, "start"); err != nil {
+	time.Sleep(5 * time.Millisecond)
+	if err := h.sendCommand(HD44780_FUNCTIONSET|h.displayFunc, "start5"); err != nil {
 		return err
 	}
-	if err := h.sendCommand(HD44780_ENTRYMODESET|h.displayMode, "start"); err != nil {
+	if err := h.sendCommand(HD44780_ENTRYMODESET|h.displayMode, "start6"); err != nil {
 		return err
 	}
 
 	return h.clear()
-}
-
-// SetRWPin initializes the RW pin
-func (h *HD44780Driver) SetRWPin(pinRW string) {
-	h.mutex.Lock()
-	defer h.mutex.Unlock()
-
-	h.pinRW = NewDirectPinDriver(h.connection, pinRW)
 }
 
 // Write output text to the display
@@ -255,12 +269,12 @@ func (h *HD44780Driver) Write(message string) (err error) {
 	for _, c := range message {
 		if c == '\n' {
 			row++
-			if err := h.setCursor(col, row); err != nil {
+			if err := h.setCursor(col, row, "Write-setCursor"); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := h.writeChar(int(c)); err != nil {
+		if err := h.writeChar(int(c), "Write-writeChar"); err != nil {
 			return err
 		}
 	}
@@ -294,7 +308,7 @@ func (h *HD44780Driver) SetCursor(col int, row int) (err error) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	return h.setCursor(col, row)
+	return h.setCursor(col, row, "SetCursor")
 }
 
 // Display turn the display on and off
@@ -386,7 +400,7 @@ func (h *HD44780Driver) WriteChar(data int) (err error) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	return h.writeChar(data)
+	return h.writeChar(data, "WriteChar")
 }
 
 // CreateChar create custom character
@@ -398,12 +412,12 @@ func (h *HD44780Driver) CreateChar(pos int, charMap [8]byte) (err error) {
 		return errors.New("can't set a custom character at a position greater than 7")
 	}
 
-	if err := h.sendCommand(HD44780_SETCGRAMADDR|(pos<<3), "CreateChar"); err != nil {
+	if err := h.sendCommand(HD44780_SETCGRAMADDR|(pos<<3), "CreateChar-sendCommand"); err != nil {
 		return err
 	}
 
 	for i := range charMap {
-		if err := h.writeChar(int(charMap[i])); err != nil {
+		if err := h.writeChar(int(charMap[i]), "CreateChar-writeChar"); err != nil {
 			return err
 		}
 	}
@@ -456,10 +470,12 @@ func (h *HD44780Driver) sendCommand(data int, sender string) (err error) {
 	return h.writeDataPins(data)
 }
 
-func (h *HD44780Driver) writeChar(data int) (err error) {
-	if err := h.waitForBusyFlag("WriteChar"); err != nil {
+func (h *HD44780Driver) writeChar(data int, sender string) (err error) {
+
+	if err := h.waitForBusyFlag(sender); err != nil {
 		return err
 	}
+
 	if err := h.activateWriteMode(); err != nil {
 		return err
 	}
@@ -485,12 +501,12 @@ func (h *HD44780Driver) clear() (err error) {
 	return nil
 }
 
-func (h *HD44780Driver) setCursor(col int, row int) (err error) {
+func (h *HD44780Driver) setCursor(col int, row int, sender string) (err error) {
 	if col < 0 || row < 0 || col >= h.cols || row >= h.rows {
 		return fmt.Errorf("Invalid position value (%d, %d), range (%d, %d)", col, row, h.cols-1, h.rows-1)
 	}
 
-	return h.sendCommand(HD44780_SETDDRAMADDR|col+h.rowOffsets[row], "SetCursor")
+	return h.sendCommand(HD44780_SETDDRAMADDR|col+h.rowOffsets[row], sender)
 }
 
 func (h *HD44780Driver) waitForBusyFlag(sender string) (err error) {
@@ -508,9 +524,14 @@ func (h *HD44780Driver) waitForBusyFlagAndReadAddressCounter(onlyBF bool, sender
 	// read AC or EN = "0", wait, EN = "1", wait, EN ="0" (to simulate AC-read)
 	// store to AC
 	//
-	if h.pinRW == nil || !checkBusyFlag {
+	if h.pinRW == nil || !h.checkBusyFlag {
 		return
 	}
+	// ensure disabled state
+	if err = h.pinEN.Off(); err != nil {
+		return
+	}
+	// activate instruction register
 	if err = h.pinRS.Off(); err != nil {
 		return
 	}
@@ -518,20 +539,23 @@ func (h *HD44780Driver) waitForBusyFlagAndReadAddressCounter(onlyBF bool, sender
 	if err = h.pinRW.On(); err != nil {
 		return
 	}
+
+	// start reading
 	if err = h.pinEN.On(); err != nil {
 		return
 	}
-	// repeat until BF is "0"
 
+	// repeat until BF is "0"
+	// reset formerly set bf pin
+	bfPin := 7
+	if h.busMode == HD44780_4BITMODE {
+		bfPin = 3
+	}
 	i := 1
 	maxWait := 20
 	var waitTime time.Duration
 	for ; i <= maxWait; i++ {
-		bfPin := 7
 		var val int
-		if h.busMode == HD44780_4BITMODE {
-			bfPin = 3
-		}
 		if val, err = h.pinDataBits[bfPin].DigitalRead(); err != nil {
 			return
 		}

@@ -330,6 +330,7 @@ func (m *MCP23017Driver) ReadGPIO(pin uint8, portStr string) (val uint8, err err
 // SetPullUp sets the pull up state of a given pin based on the value:
 // val = 1 pull up enabled.
 // val = 0 pull up disabled.
+//TODO: change order to pin, port, val
 func (m *MCP23017Driver) SetPullUp(pin uint8, val uint8, portStr string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -341,6 +342,7 @@ func (m *MCP23017Driver) SetPullUp(pin uint8, val uint8, portStr string) error {
 // SetGPIOPolarity will change a given pin's polarity based on the value:
 // val = 1 opposite logic state of the input pin.
 // val = 0 same logic state of the input pin.
+//TODO: change order to pin, port, val
 func (m *MCP23017Driver) SetGPIOPolarity(pin uint8, val uint8, portStr string) (err error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()

@@ -11,12 +11,12 @@ import (
 	"gobot.io/x/gobot/sysfs"
 )
 
-const debug = false
+const debug = true
 
 const (
 	pwmNormal        = "normal"
 	pwmInverted      = "inverse"
-	pwmPeriodDefault = 10000000
+	pwmPeriodDefault = 10000000 // 10ms = 100Hz
 )
 
 type pwmPinDefinition struct {
@@ -70,7 +70,7 @@ func (c *Adaptor) Finalize() (err error) {
 	}
 	for _, pin := range c.pwmPins {
 		if pin != nil {
-			if errs := pin.Enable(false); errs != nil {
+			if errs := pin.SetEnable(false); errs != nil {
 				err = multierror.Append(err, errs)
 			}
 			if errs := pin.Unexport(); errs != nil {
@@ -108,7 +108,10 @@ func (c *Adaptor) DigitalWrite(pin string, val byte) (err error) {
 
 // PwmWrite writes a PWM signal to the specified pin.
 func (c *Adaptor) PwmWrite(pin string, val byte) (err error) {
-	pwmPin, err := c.PWMPin(pin)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	pwmPin, err := c.pwmPin(pin)
 	if err != nil {
 		return
 	}
@@ -125,7 +128,10 @@ func (c *Adaptor) PwmWrite(pin string, val byte) (err error) {
 
 // ServoWrite writes a servo signal to the specified pin.
 func (c *Adaptor) ServoWrite(pin string, angle byte) (err error) {
-	pwmPin, err := c.PWMPin(pin)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	pwmPin, err := c.pwmPin(pin)
 	if err != nil {
 		return
 	}
@@ -146,49 +152,14 @@ func (c *Adaptor) ServoWrite(pin string, angle byte) (err error) {
 // SetPeriod adjusts the period of the specified PWM pin.
 // If duty cycle is already set, also this value will be adjusted in the same ratio.
 func (c *Adaptor) SetPeriod(pin string, period uint32) error {
-	var errorBase = fmt.Sprintf("SetPeriod %d failed at pin %s", period, pin)
-	pwmPin, err := c.PWMPin(pin)
-	if err != nil {
-		return fmt.Errorf("%s with %v", errorBase, err)
-	}
-	oldDuty, err := pwmPin.DutyCycle()
-	if err != nil {
-		return fmt.Errorf("%s with %v", errorBase, err)
-	}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
-	if oldDuty == 0 {
-		if err := pwmPin.SetPeriod(period); err != nil {
-			return fmt.Errorf("%s with %v", errorBase, err)
-		}
-	} else {
-		// adjust duty cycle in the same ratio
-		oldPeriod, err := pwmPin.Period()
-		if err != nil {
-			return fmt.Errorf("%s with %v", errorBase, err)
-		}
-		duty := uint32(uint64(oldDuty) * uint64(period) / uint64(oldPeriod))
-		if debug {
-			log.Printf("oldPeriod: %d, oldDuty: %d, new period: %d, new duty: %d", oldPeriod, oldDuty, period, duty)
-		}
-
-		// the order depends on value (duty must not be bigger than period in any situation)
-		if duty > oldPeriod {
-			if err := pwmPin.SetPeriod(period); err != nil {
-				return fmt.Errorf("%s with %v", errorBase, err)
-			}
-			if err := pwmPin.SetDutyCycle(uint32(duty)); err != nil {
-				return fmt.Errorf("%s with %v", errorBase, err)
-			}
-		} else {
-			if err := pwmPin.SetDutyCycle(uint32(duty)); err != nil {
-				return fmt.Errorf("%s with %v", errorBase, err)
-			}
-			if err := pwmPin.SetPeriod(period); err != nil {
-				return fmt.Errorf("%s with %v", errorBase, err)
-			}
-		}
+	pwmPin, err := c.pwmPin(pin)
+	if err != nil {
+		return err
 	}
-	return nil
+	return setPeriod(pwmPin, period)
 }
 
 // DigitalPin returns matched digitalPin for specified values.
@@ -222,41 +193,7 @@ func (c *Adaptor) PWMPin(pin string) (sysfsPin sysfs.PWMPinner, err error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	var pwmPinData pwmPinDefinition
-	if pwmPinData, err = c.translatePwmPin(pin); err != nil {
-		return
-	}
-
-	if c.pwmPins[pin] == nil {
-		var path string
-		if path, err = pwmPinData.findDir(); err != nil {
-			return
-		}
-		newPin := sysfs.NewPWMPin(pwmPinData.channel)
-		newPin.Path = path
-		if err = newPin.Export(); err != nil {
-			return
-		}
-		// Make sure pwm is disabled before change anything
-		if err = newPin.Enable(false); err != nil {
-			return
-		}
-		if err = newPin.SetPeriod(pwmPeriodDefault); err != nil {
-			return
-		}
-		if err = newPin.SetPolarity(pwmNormal); err != nil {
-			return
-		}
-		if err = newPin.Enable(true); err != nil {
-			return
-		}
-		if debug {
-			log.Printf("New PWMPin created for %s\n", pin)
-		}
-		c.pwmPins[pin] = newPin
-	}
-
-	return c.pwmPins[pin], nil
+	return c.pwmPin(pin)
 }
 
 // GetConnection returns a connection to a device on a specified i2c bus.
@@ -278,6 +215,95 @@ func (c *Adaptor) GetConnection(address int, bus int) (connection i2c.Connection
 // GetDefaultBus returns the default i2c bus for this platform.
 func (c *Adaptor) GetDefaultBus() int {
 	return 1
+}
+
+// pwmPin initializes the pin for PWM and returns matched pwmPin for specified pin number.
+func (c *Adaptor) pwmPin(pin string) (sysfsPin sysfs.PWMPinner, err error) {
+	var pwmPinData pwmPinDefinition
+	if pwmPinData, err = c.translatePwmPin(pin); err != nil {
+		return
+	}
+
+	if c.pwmPins[pin] == nil {
+		var path string
+		if path, err = pwmPinData.findDir(); err != nil {
+			return
+		}
+		newPin := sysfs.NewPWMPin(pwmPinData.channel)
+		newPin.Path = path
+		if err = newPin.Export(); err != nil {
+			return
+		}
+		// Make sure pwm is disabled before change anything
+		if err = newPin.SetEnable(false); err != nil {
+			return
+		}
+		if err = setPeriod(newPin, pwmPeriodDefault); err != nil {
+			return
+		}
+		if err = newPin.SetPolarity(pwmNormal); err != nil {
+			return
+		}
+		if err = newPin.SetEnable(true); err != nil {
+			return
+		}
+		if debug {
+			log.Printf("New PWMPin created for %s\n", pin)
+		}
+		c.pwmPins[pin] = newPin
+	}
+
+	return c.pwmPins[pin], nil
+}
+
+// setPeriod adjusts the PWM period of the given pin.
+// If duty cycle is already set, also this value will be adjusted in the same ratio.
+// The order in which the values are written must be observed, otherwise an error occur "write error: Invalid argument".
+func setPeriod(pwmPin sysfs.PWMPinner, period uint32) error {
+	var errorBase = fmt.Sprintf("tinkerboard.setPeriod(%v, %d) failed", pwmPin, period)
+	oldDuty, err := pwmPin.DutyCycle()
+	if err != nil {
+		return fmt.Errorf("%s with '%v'", errorBase, err)
+	}
+
+	if oldDuty == 0 {
+		if err := pwmPin.SetPeriod(period); err != nil {
+			log.Println(1, period)
+			return fmt.Errorf("%s with '%v'", errorBase, err)
+		}
+	} else {
+		// adjust duty cycle in the same ratio
+		oldPeriod, err := pwmPin.Period()
+		if err != nil {
+			return fmt.Errorf("%s with '%v'", errorBase, err)
+		}
+		duty := uint32(uint64(oldDuty) * uint64(period) / uint64(oldPeriod))
+		if debug {
+			log.Printf("oldPeriod: %d, oldDuty: %d, new period: %d, new duty: %d", oldPeriod, oldDuty, period, duty)
+		}
+
+		// the order depends on value (duty must not be bigger than period in any situation)
+		if duty > oldPeriod {
+			if err := pwmPin.SetPeriod(period); err != nil {
+				log.Println(2, period)
+				return fmt.Errorf("%s with '%v'", errorBase, err)
+			}
+			if err := pwmPin.SetDutyCycle(uint32(duty)); err != nil {
+				log.Println(2, duty)
+				return fmt.Errorf("%s with '%v'", errorBase, err)
+			}
+		} else {
+			if err := pwmPin.SetDutyCycle(uint32(duty)); err != nil {
+				log.Println(3, duty)
+				return fmt.Errorf("%s with '%v'", errorBase, err)
+			}
+			if err := pwmPin.SetPeriod(period); err != nil {
+				log.Println(3, period)
+				return fmt.Errorf("%s with '%v'", errorBase, err)
+			}
+		}
+	}
+	return nil
 }
 
 func (c *Adaptor) setPins() {

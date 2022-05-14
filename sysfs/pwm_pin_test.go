@@ -43,7 +43,7 @@ func TestPwmPin(t *testing.T) {
 	gobottest.Assert(t, pol, "normal")
 
 	gobottest.Refute(t, fs.Files["/sys/class/pwm/pwmchip0/pwm10/enable"].Contents, "1")
-	err = pin.Enable(true)
+	err = pin.SetEnable(true)
 	gobottest.Assert(t, err, nil)
 	gobottest.Assert(t, fs.Files["/sys/class/pwm/pwmchip0/pwm10/enable"].Contents, "1")
 	gobottest.Refute(t, pin.InvertPolarity(false), nil)

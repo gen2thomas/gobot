@@ -80,7 +80,7 @@ func (c *Adaptor) Finalize() (err error) {
 	}
 	for _, pin := range c.pwmPins {
 		if pin != nil {
-			if errs := pin.Enable(false); errs != nil {
+			if errs := pin.SetEnable(false); errs != nil {
 				err = multierror.Append(err, errs)
 			}
 			if errs := pin.Unexport(); errs != nil {
@@ -180,13 +180,13 @@ func (c *Adaptor) PWMPin(pin string) (sysfsPin sysfs.PWMPinner, err error) {
 				return
 			}
 			// Make sure pwm is disabled when setting polarity
-			if err = newPin.Enable(false); err != nil {
+			if err = newPin.SetEnable(false); err != nil {
 				return
 			}
 			if err = newPin.InvertPolarity(false); err != nil {
 				return
 			}
-			if err = newPin.Enable(true); err != nil {
+			if err = newPin.SetEnable(true); err != nil {
 				return
 			}
 			if err = newPin.SetPeriod(10000000); err != nil {

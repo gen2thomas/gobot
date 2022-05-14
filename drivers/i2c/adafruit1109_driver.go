@@ -85,7 +85,35 @@ func NewAdafruit1109Driver(a Connector, options ...func(Config)) *Adafruit1109Dr
 	lcd := gpio.NewHD44780Driver(m, columns, rows, gpio.HD44780_4BITMODE, m.rsPin.String(), m.enPin.String(), dataPins)
 	lcd.SetRWPin(m.rwPin.String())
 	m.HD44780Driver = lcd
+
+	for _, option := range options {
+		option(m)
+	}
+
 	return m
+}
+
+// WithAdafruit1109CheckBusyFlag option activates or deactivates the option
+// to check the busy flag before each write.
+func WithAdafruit1109CheckBusyFlag(state bool) func(Config) {
+	return func(c Config) {
+		m, ok := c.(*Adafruit1109Driver)
+		if ok {
+			if state {
+				// the MCP23017Driver must be set to change IO direction automatically
+				// note: we don't force to switch off for state = false
+				// because this could be dangerous for other IO's
+				WithMCP23017AutoIODirOff(0)(m.MCP23017Driver)
+				// the rwPin of HD44780Driver is already set
+			}
+			// the function must be switched in HD44780Driver
+			if err := m.HD44780Driver.SetBusyFlagCheck(state); err != nil {
+				panic(err)
+			}
+		} else if adafruit1109Debug {
+			log.Printf("Trying to set CheckBusyFlag for non-Adafruit1109Driver %v", c)
+		}
+	}
 }
 
 // gobot.Connection interface

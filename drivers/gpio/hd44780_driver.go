@@ -10,6 +10,8 @@ import (
 	"gobot.io/x/gobot"
 )
 
+const hd44780Debug = false
+
 const (
 	HD44780_CLEARDISPLAY        = 0x01
 	HD44780_RETURNHOME          = 0x02
@@ -55,10 +57,10 @@ const (
 
 // databit pins
 type HD44780DataPin struct {
-	D0 string // not used if 4bit mode
-	D1 string // not used if 4bit mode
-	D2 string // not used if 4bit mode
-	D3 string // not used if 4bit mode
+	D0 string // not used if 4Bit mode
+	D1 string // not used if 4Bit mode
+	D2 string // not used if 4Bit mode
+	D3 string // not used if 4Bit mode
 	D4 string
 	D5 string
 	D6 string
@@ -81,13 +83,14 @@ type HD44780Driver struct {
 	displayFunc   int
 	displayMode   int
 	checkBusyFlag bool
+	busyFlagReady bool
 	connection    gobot.Connection
 	gobot.Commander
-	mutex *sync.Mutex // mutex is needed for sequences, like CreateChar(), Write(), Start()
+	mutex *sync.Mutex // mutex is needed for sequences, like CreateChar(), Write(), Start(), Halt()
 }
 
 // NewHD44780Driver return a new HD44780Driver
-// a: gobot.Conenction
+// a: gobot.Connection
 // cols: lcd columns
 // rows: lcd rows
 // busMode: 4Bit or 8Bit
@@ -140,7 +143,6 @@ func (h *HD44780Driver) SetRWPin(pinRW string) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	log.Println("SetRWPin called")
 	h.pinRW = NewDirectPinDriver(h.connection, pinRW)
 }
 
@@ -156,22 +158,19 @@ func (h *HD44780Driver) SetBusyFlagCheck(state bool) error {
 	return nil
 }
 
-// Halt implements the Driver interface
-func (h *HD44780Driver) Halt() error { return nil }
-
 // Name returns the HD44780Driver name
 func (h *HD44780Driver) Name() string { return h.name }
 
 // SetName sets the HD44780Driver name
 func (h *HD44780Driver) SetName(n string) { h.name = n }
 
-// Connecton returns the HD44780Driver Connection
+// Connection returns the HD44780Driver Connection
 func (h *HD44780Driver) Connection() gobot.Connection {
 	return h.connection
 }
 
 // Start initializes the HD44780 LCD controller
-// refer to page 45/46 of hitachi HD44780 datasheet
+// refer to page 45/46 of Hitachi HD44780 datasheet
 func (h *HD44780Driver) Start() (err error) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
@@ -188,41 +187,37 @@ func (h *HD44780Driver) Start() (err error) {
 		return err
 	}
 
+	// for initialization refer to documentation, page 45 and 46
 	if h.busMode == HD44780_4BITMODE {
 		if err := h.writeDataPins(0x03); err != nil {
 			return err
 		}
 		time.Sleep(5 * time.Millisecond)
-
 		if err := h.writeDataPins(0x03); err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Microsecond)
-
 		if err := h.writeDataPins(0x03); err != nil {
 			return err
 		}
-		time.Sleep(100 * time.Microsecond)
-
+		// no additional delay is necessary now
 		if err := h.writeDataPins(0x02); err != nil {
 			return err
 		}
 	} else {
-		if err := h.sendCommand(0x30, "start1"); err != nil {
+		if err := h.sendCommand(0x30, "no BF"); err != nil {
 			return err
 		}
 		time.Sleep(5 * time.Millisecond)
-
-		if err := h.sendCommand(0x30, "start2"); err != nil {
+		if err := h.sendCommand(0x30, "no BF"); err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Microsecond)
-
-		if err := h.sendCommand(0x30, "start3"); err != nil {
+		if err := h.sendCommand(0x30, "no BF"); err != nil {
 			return err
 		}
+		// no additional delay is necessary now
 	}
-	time.Sleep(100 * time.Microsecond)
 
 	if h.busMode == HD44780_4BITMODE {
 		h.displayFunc |= HD44780_4BITBUS
@@ -240,19 +235,35 @@ func (h *HD44780Driver) Start() (err error) {
 	h.displayCtrl = HD44780_DISPLAYON | HD44780_BLINKOFF | HD44780_CURSOROFF
 	h.displayMode = HD44780_ENTRYLEFT | HD44780_ENTRYSHIFTDECREMENT
 
-	time.Sleep(1 * time.Millisecond)
-	if err := h.sendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "start4"); err != nil {
-		return err
-	}
-	time.Sleep(5 * time.Millisecond)
-	if err := h.sendCommand(HD44780_FUNCTIONSET|h.displayFunc, "start5"); err != nil {
-		return err
-	}
-	if err := h.sendCommand(HD44780_ENTRYMODESET|h.displayMode, "start6"); err != nil {
+	if err := h.sendCommand(HD44780_FUNCTIONSET|h.displayFunc, "no BF"); err != nil {
 		return err
 	}
 
-	return h.clear()
+	if err := h.sendCommand(HD44780_DISPLAYCONTROL|h.displayCtrl, "no BF"); err != nil {
+		return err
+	}
+
+	if err := h.clear("no BF"); err != nil {
+		return err
+	}
+
+	if err := h.sendCommand(HD44780_ENTRYMODESET|h.displayMode, "no BF"); err != nil {
+		return err
+	}
+
+	// see documentation, page 45, 46
+	h.busyFlagReady = true
+	return nil
+}
+
+// Halt implements the Driver interface
+func (h *HD44780Driver) Halt() error {
+	// mutex: bad characters and device locking can be prevented
+	// if the last action is finished before return
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	return nil
 }
 
 // Write output text to the display
@@ -287,7 +298,7 @@ func (h *HD44780Driver) Clear() (err error) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	return h.clear()
+	return h.clear("Clear")
 }
 
 // Home return cursor to home
@@ -492,12 +503,15 @@ func (h *HD44780Driver) writeChar(data int, sender string) (err error) {
 	return h.writeDataPins(data)
 }
 
-func (h *HD44780Driver) clear() (err error) {
-	if err := h.sendCommand(HD44780_CLEARDISPLAY, "Clear"); err != nil {
+func (h *HD44780Driver) clear(sender string) (err error) {
+	if err := h.sendCommand(HD44780_CLEARDISPLAY, sender); err != nil {
 		return err
 	}
-	time.Sleep(2 * time.Millisecond)
-
+	if !h.canBusyFlagCheck() {
+		// clear is time consuming, see documentation for JHD1313
+		// for lower clock speed it takes more time
+		time.Sleep(4 * time.Millisecond)
+	}
 	return nil
 }
 
@@ -524,7 +538,7 @@ func (h *HD44780Driver) waitForBusyFlagAndReadAddressCounter(onlyBF bool, sender
 	// read AC or EN = "0", wait, EN = "1", wait, EN ="0" (to simulate AC-read)
 	// store to AC
 	//
-	if h.pinRW == nil || !h.checkBusyFlag {
+	if !h.canBusyFlagCheck() {
 		return
 	}
 	// ensure disabled state
@@ -661,10 +675,21 @@ func (h *HD44780Driver) fallingEdge() (err error) {
 	if err := h.pinEN.Off(); err != nil {
 		return err
 	}
-	// fastest write operation at 190kHz mode takes 53 us
-	time.Sleep(60 * time.Microsecond)
-
+	if !h.canBusyFlagCheck() {
+		// fastest write operation at 190kHz mode takes 53 us
+		time.Sleep(60 * time.Microsecond)
+	}
 	return nil
+}
+
+func (h *HD44780Driver) canBusyFlagCheck() bool {
+	if h.pinRW != nil && h.checkBusyFlag && h.busyFlagReady {
+		return true
+	}
+	if hd44780Debug {
+		log.Printf("BF check skipped: pinRw: %v, checkBusyFlag: %v, busyFlagReady: %v", h.pinRW, h.checkBusyFlag, h.busyFlagReady)
+	}
+	return false
 }
 
 func (h *HD44780Driver) activateWriteMode() (err error) {

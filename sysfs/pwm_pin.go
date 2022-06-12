@@ -28,12 +28,14 @@ type PWMPinner interface {
 	Export() error
 	// Unexport unexports the pin and releases the pin from the operating system
 	Unexport() error
-	// GetEnable returns current enable value
+	// Enable returns current enable value
 	Enable() (bool, error)
 	// Enable enables/disables the PWM pin
 	SetEnable(bool) (err error)
 	// Polarity returns the polarity either normal or inverted
 	Polarity() (polarity string, err error)
+	// SetPolarity writes value to pwm polarity path
+	SetPolarity(value string) (err error)
 	// InvertPolarity sets the polarity to inverted if called with true
 	InvertPolarity(invert bool) (err error)
 	// Period returns the current PWM period for pin

@@ -134,7 +134,7 @@ func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 		return err
 	}
 	// set pin as output by clearing bit
-	iodirVal := clearBitAtPos(iodir, uint8(pin))
+	iodirVal := clearBit(iodir, uint8(pin))
 	// write CTRL register
 	err = p.connectionGPIO.WriteByte(uint8(iodirVal))
 	if err != nil {
@@ -148,9 +148,9 @@ func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 	// set or reset the bit in value
 	var nVal uint8
 	if val == 0 {
-		nVal = clearBitAtPos(cVal, uint8(pin))
+		nVal = clearBit(cVal, uint8(pin))
 	} else {
-		nVal = setBitAtPos(cVal, uint8(pin))
+		nVal = setBit(cVal, uint8(pin))
 	}
 	// write new value to port
 	err = p.connectionGPIO.WriteByte(uint8(nVal))
@@ -168,7 +168,7 @@ func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 		return 0, err
 	}
 	// set pin as input by setting bit
-	iodirVal := setBitAtPos(iodir, uint8(pin))
+	iodirVal := setBit(iodir, uint8(pin))
 	// write CTRL register
 	err = p.connectionGPIO.WriteByte(uint8(iodirVal))
 	if err != nil {
@@ -216,17 +216,6 @@ func (p *PCA9501Driver) WriteEEPROM(address uint8, val uint8) (err error) {
 
 func (p *PCA9501Driver) MemReadDummy() PCA9501DriverMemReadDummy {
 	return PCA9501DriverMemReadDummy{Address: pca9501MemReadDummyAddress, Value: pca9501MemReadDummyValue}
-}
-
-func setBitAtPos(n uint8, pos uint8) uint8 {
-	n |= (1 << pos)
-	return n
-}
-
-func clearBitAtPos(n uint8, pos uint8) uint8 {
-	mask := ^uint8(1 << pos)
-	n &= mask
-	return n
 }
 
 func (p *PCA9501Driver) getAddressMem(defaultAdress int) int {

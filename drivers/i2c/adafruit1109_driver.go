@@ -124,7 +124,6 @@ func (m *Adafruit1109Driver) SetName(n string) { m.name = n }
 
 // gobot.Device interface
 func (m *Adafruit1109Driver) Connection() gobot.Connection { return m.MCP23017Driver.Connection() }
-func (m *Adafruit1109Driver) Halt() (err error)            { return m.MCP23017Driver.Halt() }
 
 func (m *Adafruit1109Driver) Start() (err error) {
 	if adafruit1109Debug {
@@ -173,6 +172,29 @@ func (m *Adafruit1109Driver) Start() (err error) {
 		log.Printf("## HD.Start ##")
 	}
 	return m.HD44780Driver.Start()
+}
+
+func (m *Adafruit1109Driver) Halt() (err error) {
+	// we try halt on each device, not stopping on the first error
+	var errors []string
+
+	if err := m.HD44780Driver.Halt(); err != nil {
+		errors = append(errors, err.Error())
+	}
+	// switch off the background light
+	if err = m.SetRGB(false, false, false); err != nil {
+		errors = append(errors, err.Error())
+	}
+	// must be after HD44780Driver
+	if err := m.MCP23017Driver.Halt(); err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("Halt the driver %s", strings.Join(errors, ", "))
+	}
+
+	return nil
 }
 
 // DigitalWriter interface

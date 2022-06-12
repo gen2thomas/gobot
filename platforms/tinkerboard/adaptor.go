@@ -11,11 +11,11 @@ import (
 	"gobot.io/x/gobot/sysfs"
 )
 
-const debug = true
+const debug = false
 
 const (
 	pwmNormal        = "normal"
-	pwmInverted      = "inverse"
+	pwmInverted      = "inversed"
 	pwmPeriodDefault = 10000000 // 10ms = 100Hz
 )
 
@@ -121,7 +121,7 @@ func (c *Adaptor) PwmWrite(pin string, val byte) (err error) {
 	}
 	duty := gobot.FromScale(float64(val), 0, 255.0)
 	if debug {
-		log.Println(period, duty)
+		log.Printf("Tinkerboard PwmWrite - raw: %d, period: %d, duty: %.2f %%", val, period, duty*100)
 	}
 	return pwmPin.SetDutyCycle(uint32(float64(period) * duty))
 }

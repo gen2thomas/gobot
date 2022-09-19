@@ -2,6 +2,7 @@ package i2c
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"gobot.io/x/gobot"
@@ -40,6 +41,7 @@ type PCA9501Driver struct {
 	connectionMem  Connection
 	Config
 	gobot.Commander
+	mutex *sync.Mutex // mutex needed to ensure write-read sequence of Write*()/Read*() is not interrupted
 }
 
 // PCA9501DriverMemReadDummy contains the dummy values used for reading EEPROM address
@@ -62,6 +64,7 @@ func NewPCA9501Driver(a Connector, options ...func(Config)) *PCA9501Driver {
 		connector: a,
 		Config:    NewConfig(),
 		Commander: gobot.NewCommander(),
+		mutex:     &sync.Mutex{},
 	}
 
 	for _, option := range options {
@@ -128,6 +131,9 @@ func (p *PCA9501Driver) Halt() (err error) { return }
 
 // WriteGPIO writes a value to a gpio pin (0-7)
 func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	// read current value of CTRL register, 0 is no output, 1 is an output
 	iodir, err := p.connectionGPIO.ReadByte()
 	if err != nil {
@@ -162,6 +168,9 @@ func (p *PCA9501Driver) WriteGPIO(pin uint8, val uint8) (err error) {
 
 // ReadGPIO reads a value from a given gpio pin (0-7)
 func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	// read current value of CTRL register, 0 is no output, 1 is an output
 	iodir, err := p.connectionGPIO.ReadByte()
 	if err != nil {
@@ -188,6 +197,9 @@ func (p *PCA9501Driver) ReadGPIO(pin uint8) (val uint8, err error) {
 
 // ReadEEPROM reads a value from a given address (0x00-0xFF)
 func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	// Please read explanation at the end of this document to understand, why it is implemented in this way
 	if address == pca9501MemReadDummyAddress {
 		return pca9501MemReadDummyValue, fmt.Errorf("Dummy address %d not meaningfull to read\n", pca9501MemReadDummyAddress)
@@ -208,6 +220,9 @@ func (p *PCA9501Driver) ReadEEPROM(address uint8) (val uint8, err error) {
 
 // WriteEEPROM writes a value to a given address in memory (0x00-0xFF)
 func (p *PCA9501Driver) WriteEEPROM(address uint8, val uint8) (err error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	if address == pca9501MemReadDummyAddress {
 		return fmt.Errorf("Dummy address %d not meaningfull to write\n", pca9501MemReadDummyAddress)
 	}

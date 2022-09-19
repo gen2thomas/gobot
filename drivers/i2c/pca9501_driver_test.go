@@ -443,24 +443,6 @@ func TestPCA9501DriverReadEEPROMErrorWhileReadValue(t *testing.T) {
 	gobottest.Assert(t, err, expectedReadError)
 }
 
-func TestPCA9501DriverSetBitAtPos(t *testing.T) {
-	// arrange
-	var expectedVal uint8 = 129
-	// act
-	actualVal := setBitAtPos(1, 7)
-	// assert
-	gobottest.Assert(t, expectedVal, actualVal)
-}
-
-func TestPCA9501DriverClearBitAtPos(t *testing.T) {
-	// arrange
-	var expectedVal uint8
-	// act
-	actualVal := clearBitAtPos(128, 7)
-	// assert
-	gobottest.Assert(t, expectedVal, actualVal)
-}
-
 func TestPCA9501DriverSetName(t *testing.T) {
 	// arrange
 	d, _ := initPCA9501TestDriver()

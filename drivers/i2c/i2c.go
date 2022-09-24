@@ -202,3 +202,15 @@ func clearBit(n uint8, pos uint8) uint8 {
 	n &= mask
 	return n
 }
+
+func swapBytes(value uint16) uint16 {
+	return (value << 8) | (value >> 8)
+}
+
+func twosComplement16Bit(unsignedValue uint16) int16 {
+	result := int(unsignedValue)
+	if result&0x8000 != 0 {
+		result -= 1 << 16
+	}
+	return int16(result)
+}

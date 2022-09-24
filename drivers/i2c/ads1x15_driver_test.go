@@ -86,6 +86,7 @@ func TestADS1x15StartConnectError(t *testing.T) {
 
 func TestADS1015DriverAnalogRead(t *testing.T) {
 	d, adaptor := initTestADS1015DriverWithStubbedAdaptor()
+	WithADS1x15WaitSingleCycle()(d)
 	d.Start()
 
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
@@ -131,6 +132,7 @@ func TestADS1015DriverAnalogRead(t *testing.T) {
 
 func TestADS1115DriverAnalogRead(t *testing.T) {
 	d, adaptor := initTestADS1115DriverWithStubbedAdaptor()
+	WithADS1x15WaitSingleCycle()(d)
 	d.Start()
 
 	adaptor.i2cReadImpl = func(b []byte) (int, error) {
@@ -247,4 +249,124 @@ func TestADS1x15DriverReadDifferenceInvalidChannel(t *testing.T) {
 
 	_, err := d.ReadDifference(9, d.DefaultGain, d.DefaultDataRate)
 	gobottest.Assert(t, err, errors.New("Invalid channel, must be between 0 and 3"))
+}
+
+func TestADS1x15Driver_rawRead(t *testing.T) {
+	// sequence to read:
+	// * prepare config register content (mode, input, gain, data rate, comparator)
+	// * write config register (16 bit, MSByte first)
+	// * read config register (16 bit, MSByte first) and wait for bit 15 is set
+	// * read conversion register (16 bit, MSByte first) for the value
+	// * apply two's complement converter, relates to one digit resolution (1/2^15), voltage multiplier
+	var tests = map[string]struct {
+		input      []uint8
+		gain       int
+		dataRate   int
+		want       int
+		wantConfig []uint8
+	}{
+		"+FS": {
+			input:      []uint8{0x7F, 0xFF},
+			gain:       0,
+			dataRate:   8,
+			want:       (1<<15 - 1),
+			wantConfig: []uint8{0x91, 0x03},
+		},
+		"+1": {
+			input:      []uint8{0x00, 0x01},
+			gain:       0,
+			dataRate:   16,
+			want:       1,
+			wantConfig: []uint8{0x91, 0x23},
+		},
+		"+-0": {
+			input:      []uint8{0x00, 0x00},
+			gain:       0,
+			dataRate:   32,
+			want:       0,
+			wantConfig: []uint8{0x91, 0x43},
+		},
+		"-1": {
+			input:      []uint8{0xFF, 0xFF},
+			gain:       0,
+			dataRate:   64,
+			want:       -1,
+			wantConfig: []uint8{0x91, 0x63},
+		},
+		"-FS": {
+			input:      []uint8{0x80, 0x00},
+			gain:       0,
+			dataRate:   128,
+			want:       -(1 << 15),
+			wantConfig: []uint8{0x91, 0x83},
+		},
+		"+FS gain 1": {
+			input:      []uint8{0x7F, 0xFF},
+			gain:       1,
+			dataRate:   250,
+			want:       (1<<15 - 1),
+			wantConfig: []uint8{0x93, 0xA3},
+		},
+		"+FS gain 2": {
+			input:      []uint8{0x7F, 0xFF},
+			gain:       2,
+			dataRate:   250,
+			want:       (1<<15 - 1),
+			wantConfig: []uint8{0x95, 0xA3},
+		},
+		"+FS gain 4": {
+			input:      []uint8{0x7F, 0xFF},
+			gain:       4,
+			dataRate:   475,
+			want:       (1<<15 - 1),
+			wantConfig: []uint8{0x97, 0xC3},
+		},
+		"+FS gain 8": {
+			input:      []uint8{0x7F, 0xFF},
+			gain:       8,
+			dataRate:   860,
+			want:       (1<<15 - 1),
+			wantConfig: []uint8{0x99, 0xE3},
+		},
+		"+FS gain 16": {
+			input:      []uint8{0x7F, 0xFF},
+			gain:       16,
+			dataRate:   128,
+			want:       (1<<15 - 1),
+			wantConfig: []uint8{0x9B, 0x83},
+		},
+	}
+	d, adaptor := initTestADS1115DriverWithStubbedAdaptor()
+	d.Start()
+	// arrange
+	channel := 1
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			adaptor.written = []byte{} // reset writes of Start() and former test
+			// arrange reads
+			conversion := []uint8{0x00, 0x00}   // a conversion is in progress
+			noConversion := []uint8{0x80, 0x00} // no conversion in progress
+			returnRead := [3][]uint8{conversion, noConversion, tt.input}
+			numCallsRead := 0
+			adaptor.i2cReadImpl = func(b []byte) (int, error) {
+				numCallsRead++
+				retRead := returnRead[numCallsRead-1]
+				copy(b, retRead)
+				return len(b), nil
+			}
+			// act
+			got, err := d.rawRead(channel, tt.gain, tt.dataRate)
+			// assert
+			gobottest.Assert(t, err, nil)
+			gobottest.Assert(t, got, float64(tt.want)/float64(1<<15)*d.gainVoltage[tt.gain])
+			gobottest.Assert(t, numCallsRead, 3)
+			gobottest.Assert(t, len(adaptor.written), 6)
+			gobottest.Assert(t, adaptor.written[0], uint8(ads1x15PointerConfig))
+			gobottest.Assert(t, adaptor.written[1], tt.wantConfig[0])            // MSByte: OS, MUX, PGA, MODE
+			gobottest.Assert(t, adaptor.written[2], tt.wantConfig[1])            // LSByte: DR, COMP_*
+			gobottest.Assert(t, adaptor.written[3], uint8(ads1x15PointerConfig)) // first check for no conversion
+			gobottest.Assert(t, adaptor.written[4], uint8(ads1x15PointerConfig)) // second check for no conversion
+			gobottest.Assert(t, adaptor.written[5], uint8(ads1x15PointerConversion))
+		})
+	}
 }

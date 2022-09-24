@@ -127,7 +127,7 @@ func (c *digisparkI2cConnection) ReadWordData(reg uint8) (val uint16, err error)
 	if err = c.readAndCheckCount(buf); err != nil {
 		return
 	}
-	low, high := buf[0], buf[1]
+	high, low := buf[0], buf[1]
 
 	val = (uint16(high) << 8) | uint16(low)
 	return

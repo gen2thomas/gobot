@@ -2,6 +2,7 @@ package i2c
 
 import (
 	"errors"
+	"log"
 	"math"
 	"strconv"
 	"time"
@@ -11,7 +12,10 @@ import (
 	"gobot.io/x/gobot"
 )
 
+const ads1x15Debug = false
+
 const (
+	ads1x15WaitMaxCount = 200
 
 	// ADS1x15DefaultAddress is the default I2C address for the ADS1x15 components
 	ADS1x15DefaultAddress = 0x48
@@ -35,15 +39,16 @@ const (
 
 // ADS1x15Driver is the Gobot driver for the ADS1015/ADS1115 ADC
 type ADS1x15Driver struct {
-	name            string
-	connector       Connector
-	connection      Connection
-	gainConfig      map[int]uint16
-	dataRates       map[int]uint16
-	gainVoltage     map[int]float64
-	converter       func([]byte) float64
-	DefaultGain     int
-	DefaultDataRate int
+	name             string
+	connector        Connector
+	connection       Connection
+	gainConfig       map[int]uint16
+	dataRates        map[int]uint16
+	gainVoltage      map[int]float64
+	converter        func([]byte) float64
+	DefaultGain      int
+	DefaultDataRate  int
+	waitOnlyOneCycle bool
 	Config
 }
 
@@ -192,6 +197,24 @@ func WithADS1x15DataRate(val int) func(Config) {
 		} else {
 			// TODO: return error for trying to set data rate for non-ADS1015Driver
 			return
+		}
+	}
+}
+
+// WithADS1x15WaitSingleCycle option sets the ADS1x15Driver to wait only a single cycle for conversion. According to the
+// specification, chapter "Output Data Rate and Conversion Time", the device normally finishes the conversion within one
+// cycle (after wake up). The cycle time depends on configured data rate and will be calculated. For unknown reasons
+// some devices do not work with this setting. So the default behavior for single shot mode is to wait for a conversion
+// is finished by reading the configuration register bit 15. Activating this option will switch off this behavior and
+// will possibly create faster response. But, if multiple inputs are used and some inputs calculates the same result,
+// most likely the device is not working with this option.
+func WithADS1x15WaitSingleCycle() func(Config) {
+	return func(c Config) {
+		d, ok := c.(*ADS1x15Driver)
+		if ok {
+			d.waitOnlyOneCycle = true
+		} else if ads1x15Debug {
+			log.Printf("Trying to set wait single cycle for non-ADS1x15Driver %v", c)
 		}
 	}
 }
@@ -347,7 +370,10 @@ func (d *ADS1x15Driver) rawRead(mux int, gain int, dataRate int) (value float64,
 
 	// Wait for the ADC sample to finish based on the sample rate plus a
 	// small offset to be sure (0.1 millisecond).
-	time.Sleep(time.Duration(1000000/dataRate+100) * time.Microsecond)
+	delay := time.Duration(1000000/dataRate+100) * time.Microsecond
+	if err = d.waitForConversionFinished(delay); err != nil {
+		return
+	}
 
 	// Retrieve the result.
 	if _, err = d.connection.Write([]byte{ads1x15PointerConversion}); err != nil {
@@ -377,4 +403,45 @@ func (d *ADS1x15Driver) checkChannel(channel int) (err error) {
 		err = errors.New("Invalid channel, must be between 0 and 3")
 	}
 	return
+}
+
+func (d *ADS1x15Driver) waitForConversionFinished(delay time.Duration) (err error) {
+	start := time.Now()
+
+	for i := 0; i < ads1x15WaitMaxCount; i++ {
+		if i == ads1x15WaitMaxCount-1 {
+			// most likely the last try will also not finish, so we stop with an error
+			return fmt.Errorf("The conversion is not finished within %s", time.Since(start))
+		}
+		var data uint16
+		if data, err = d.readBigEndian(ads1x15PointerConfig); err != nil {
+			return
+		}
+		if ads1x15Debug {
+			log.Printf("ADS1x15Driver: config register state: 0x%X\n", data)
+		}
+		// the highest bit 15: 0-device perform a conversion, 1-no conversion in progress
+		if data&0x8000 > 0 {
+			break
+		}
+		time.Sleep(delay)
+		if d.waitOnlyOneCycle {
+
+			break
+		}
+	}
+
+	if ads1x15Debug {
+		elapsed := time.Since(start)
+		log.Printf("conversion takes %s", elapsed)
+	}
+
+	return
+}
+
+func (d *ADS1x15Driver) readBigEndian(reg uint8) (data uint16, err error) {
+	if data, err = d.connection.ReadWordData(reg); err != nil {
+		return
+	}
+	return swapBytes(data), err
 }

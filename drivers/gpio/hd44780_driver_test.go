@@ -226,7 +226,7 @@ func TestHD44780DriverRightToLeft(t *testing.T) {
 func TestHD44780DriverSendCommand(t *testing.T) {
 	d := initTestHD44780Driver()
 	d.Start()
-	gobottest.Assert(t, d.SendCommand(0x33), nil)
+	gobottest.Assert(t, d.SendCommand(0x33, "test"), nil)
 }
 
 func TestHD44780DriverWriteChar(t *testing.T) {

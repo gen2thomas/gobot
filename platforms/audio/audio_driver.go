@@ -1,4 +1,3 @@
-// Package audio is based on aplay audio adaptor written by @colemanserious (https://github.com/colemanserious)
 package audio
 
 import (
@@ -8,6 +7,7 @@ import (
 )
 
 // Driver is gobot software device for audio playback
+// Based on aplay audio adaptor written by @colemanserious (https://github.com/colemanserious)
 type Driver struct {
 	gobot.Eventer
 	gobot.Commander

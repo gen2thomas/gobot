@@ -1,5 +1,6 @@
 package joystick
 
+//nolint:godoclint // ok here
 const (
 	// left X joystick event
 	LeftX = "left_x"

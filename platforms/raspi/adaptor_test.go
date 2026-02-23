@@ -306,12 +306,12 @@ func TestDigitalPinConcurrency(t *testing.T) {
 	runtime.GOMAXPROCS(8)
 	defer runtime.GOMAXPROCS(oldProcs)
 
-	for retry := 0; retry < 20; retry++ {
+	for range 20 {
 
 		a := NewAdaptor()
 		var wg sync.WaitGroup
 
-		for i := 0; i < 20; i++ {
+		for i := range 20 {
 			wg.Add(1)
 			pinAsString := strconv.Itoa(i)
 			go func(pin string) {

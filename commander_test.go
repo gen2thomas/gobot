@@ -9,7 +9,7 @@ import (
 func TestCommander(t *testing.T) {
 	// arrange
 	c := NewCommander()
-	c.AddCommand("test", func(map[string]interface{}) interface{} {
+	c.AddCommand("test", func(map[string]any) any {
 		return "hi"
 	})
 

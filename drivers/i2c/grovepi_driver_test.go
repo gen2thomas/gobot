@@ -39,7 +39,7 @@ func initGrovePiDriverWithStubbedAdaptor() (*GrovePiDriver, *i2cTestAdaptor) {
 }
 
 func TestNewGrovePiDriver(t *testing.T) {
-	var di interface{} = NewGrovePiDriver(newI2cTestAdaptor())
+	var di any = NewGrovePiDriver(newI2cTestAdaptor())
 	d, ok := di.(*GrovePiDriver)
 	if !ok {
 		require.Fail(t, "NewGrovePiDriver() should have returned a *GrovePiDriver")

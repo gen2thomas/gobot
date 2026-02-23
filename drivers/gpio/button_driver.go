@@ -41,7 +41,7 @@ type ButtonDriver struct {
 //
 //	"WithName"
 //	"WithButtonPollInterval"
-func NewButtonDriver(a DigitalReader, pin string, opts ...interface{}) *ButtonDriver {
+func NewButtonDriver(a DigitalReader, pin string, opts ...any) *ButtonDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &ButtonDriver{
 		driver:    newDriver(a.(gobot.Connection), "Button", withPin(pin)),
@@ -87,6 +87,7 @@ func (d *ButtonDriver) Active() bool {
 }
 
 // SetDefaultState for the next start.
+//
 // Deprecated: Please use option [gpio.WithButtonDefaultState] instead.
 func (d *ButtonDriver) SetDefaultState(s int) {
 	// ensure that read and write can not interfere

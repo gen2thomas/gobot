@@ -44,7 +44,7 @@ func TestNeuroskyDriverStart(t *testing.T) {
 
 	d := NewMindWaveDriver(a)
 	e := errors.New("read error")
-	_ = d.Once(d.Event(ErrorEvent), func(data interface{}) {
+	_ = d.Once(d.Event(ErrorEvent), func(data any) {
 		assert.Equal(t, e, data.(error))
 		sem <- true
 	})
@@ -77,7 +77,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		_ = d.parse(bytes.NewBuffer([]byte{0xAA, 0xAA, 1, 0x55, 0x00}))
 	}()
 
-	_ = d.On(d.Event(ExtendedEvent), func(data interface{}) {
+	_ = d.On(d.Event(ExtendedEvent), func(data any) {
 		sem <- true
 	})
 
@@ -93,7 +93,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		_ = d.parse(bytes.NewBuffer([]byte{0xAA, 0xAA, 2, 0x02, 100, 0x00}))
 	}()
 
-	_ = d.On(d.Event(SignalEvent), func(data interface{}) {
+	_ = d.On(d.Event(SignalEvent), func(data any) {
 		assert.Equal(t, byte(100), data.(byte))
 		sem <- true
 	})
@@ -106,7 +106,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		_ = d.parse(bytes.NewBuffer([]byte{0xAA, 0xAA, 2, 0x04, 40, 0x00}))
 	}()
 
-	_ = d.On(d.Event(AttentionEvent), func(data interface{}) {
+	_ = d.On(d.Event(AttentionEvent), func(data any) {
 		assert.Equal(t, byte(40), data.(byte))
 		sem <- true
 	})
@@ -119,7 +119,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		_ = d.parse(bytes.NewBuffer([]byte{0xAA, 0xAA, 2, 0x05, 60, 0x00}))
 	}()
 
-	_ = d.On(d.Event(MeditationEvent), func(data interface{}) {
+	_ = d.On(d.Event(MeditationEvent), func(data any) {
 		assert.Equal(t, byte(60), data.(byte))
 		sem <- true
 	})
@@ -132,7 +132,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		_ = d.parse(bytes.NewBuffer([]byte{0xAA, 0xAA, 2, 0x16, 150, 0x00}))
 	}()
 
-	_ = d.On(d.Event(BlinkEvent), func(data interface{}) {
+	_ = d.On(d.Event(BlinkEvent), func(data any) {
 		assert.Equal(t, byte(150), data.(byte))
 		sem <- true
 	})
@@ -145,7 +145,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		_ = d.parse(bytes.NewBuffer([]byte{0xAA, 0xAA, 4, 0x80, 0x00, 0x40, 0x11, 0x00}))
 	}()
 
-	_ = d.On(d.Event(WaveEvent), func(data interface{}) {
+	_ = d.On(d.Event(WaveEvent), func(data any) {
 		assert.Equal(t, int16(16401), data.(int16))
 		sem <- true
 	})
@@ -162,7 +162,7 @@ func TestNeuroskyDriverParse(t *testing.T) {
 		}))
 	}()
 
-	_ = d.On(d.Event(EEGEvent), func(data interface{}) {
+	_ = d.On(d.Event(EEGEvent), func(data any) {
 		assert.Equal(t,
 			MindWaveEEGData{
 				Delta:    1573241,

@@ -248,7 +248,7 @@ func (s *Adaptor) pinLevel(level byte) string {
 // any issue with the request.
 //
 //nolint:bodyclose,noctx // not changed yet
-func (s *Adaptor) request(method string, url string, params url.Values) (map[string]interface{}, error) {
+func (s *Adaptor) request(method string, url string, params url.Values) (map[string]any, error) {
 	var resp *http.Response
 	var err error
 	switch method {
@@ -267,7 +267,7 @@ func (s *Adaptor) request(method string, url string, params url.Values) (map[str
 		return nil, err
 	}
 
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(buf, &m); err != nil {
 		return m, err
 	}

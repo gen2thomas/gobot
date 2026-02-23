@@ -24,7 +24,7 @@ func initTestWiichuckDriverWithStubbedAdaptor() *WiichuckDriver {
 }
 
 func TestNewWiichuckDriver(t *testing.T) {
-	var di interface{} = NewWiichuckDriver(newI2cTestAdaptor())
+	var di any = NewWiichuckDriver(newI2cTestAdaptor())
 	d, ok := di.(*WiichuckDriver)
 	if !ok {
 		require.Fail(t, "NewWiichuckDriver() should have returned a *WiichuckDriver")
@@ -112,7 +112,7 @@ func TestWiichuckDriverCButton(t *testing.T) {
 	// - This should be done by WiichuckDriver.updateButtons
 	done := make(chan bool)
 
-	_ = d.On(d.Event(C), func(data interface{}) {
+	_ = d.On(d.Event(C), func(data any) {
 		assert.Equal(t, true, data)
 		done <- true
 	})
@@ -135,7 +135,7 @@ func TestWiichuckDriverZButton(t *testing.T) {
 
 	done := make(chan bool)
 
-	_ = d.On(d.Event(Z), func(data interface{}) {
+	_ = d.On(d.Event(Z), func(data any) {
 		assert.Equal(t, true, data)
 		done <- true
 	})
@@ -163,7 +163,7 @@ func TestWiichuckDriverUpdateJoystick(t *testing.T) {
 
 	done := make(chan bool)
 
-	_ = d.On(d.Event(Joystick), func(data interface{}) {
+	_ = d.On(d.Event(Joystick), func(data any) {
 		assert.Equal(t, expectedData, data)
 		done <- true
 	})

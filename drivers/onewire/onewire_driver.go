@@ -50,7 +50,7 @@ type driver struct {
 // Supported options:
 //
 //	"WithName"
-func newDriver(a connector, name string, familyCode byte, serialNumber uint64, opts ...interface{}) *driver {
+func newDriver(a connector, name string, familyCode byte, serialNumber uint64, opts ...any) *driver {
 	d := &driver{
 		driverCfg:  &configuration{name: gobot.DefaultName(name), familyCode: familyCode, serialNumber: serialNumber},
 		connector:  a,

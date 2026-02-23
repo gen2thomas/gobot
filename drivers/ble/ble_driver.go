@@ -24,7 +24,7 @@ type nameOption string
 type Driver struct {
 	gobot.Commander
 
-	connection interface{}
+	connection any
 	driverCfg  *configuration
 	afterStart func() error
 	beforeHalt func() error
@@ -33,7 +33,7 @@ type Driver struct {
 
 // NewDriver creates a new basic BLE gobot driver.
 func NewDriver(
-	a interface{}, name string,
+	a any, name string,
 	afterStart func() error, beforeHalt func() error,
 	opts ...OptionApplier,
 ) *Driver {
@@ -72,6 +72,7 @@ func (d *Driver) Name() string {
 }
 
 // SetName sets the name of the driver.
+//
 // Deprecated: Please use option [ble.WithName] instead.
 func (d *Driver) SetName(name string) {
 	WithName(name).apply(d.driverCfg)

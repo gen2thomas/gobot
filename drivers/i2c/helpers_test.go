@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-var rgb = map[string]interface{}{
+var rgb = map[string]any{
 	"red":   1.0,
 	"green": 1.0,
 	"blue":  1.0,
@@ -131,8 +131,8 @@ func (t *i2cTestAdaptor) WriteByteData(reg uint8, val uint8) error {
 func (t *i2cTestAdaptor) WriteWordData(reg uint8, val uint16) error {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
-	low := uint8(val & 0xff)         //nolint:gosec // ok here
-	high := uint8((val >> 8) & 0xff) //nolint:gosec // ok here
+	low := uint8(val & 0xff)
+	high := uint8((val >> 8) & 0xff)
 	bytes := []byte{reg, low, high}
 
 	return t.writeBytes(bytes)

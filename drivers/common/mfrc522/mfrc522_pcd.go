@@ -298,7 +298,7 @@ func (d *MFRC522Common) calculateCRC(data []byte, result []byte) error {
 	}
 
 	const maxTries = 3
-	for i := 0; i < maxTries; i++ {
+	for range maxTries {
 		irqs, err := d.readByteData(regDivIrq)
 		if err != nil {
 			return err

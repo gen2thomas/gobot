@@ -26,7 +26,7 @@ func initTestBH1750DriverWithStubbedAdaptor() (*BH1750Driver, *i2cTestAdaptor) {
 }
 
 func TestNewBH1750Driver(t *testing.T) {
-	var di interface{} = NewBH1750Driver(newI2cTestAdaptor())
+	var di any = NewBH1750Driver(newI2cTestAdaptor())
 	d, ok := di.(*BH1750Driver)
 	if !ok {
 		require.Fail(t, "NewBH1750Driver() should have returned a *BH1750Driver")

@@ -25,7 +25,7 @@ func initPCA953xTestDriverWithStubbedAdaptor() (*PCA953xDriver, *i2cTestAdaptor)
 
 func TestNewPCA953xDriver(t *testing.T) {
 	// arrange, act
-	var di interface{} = NewPCA953xDriver(newI2cTestAdaptor())
+	var di any = NewPCA953xDriver(newI2cTestAdaptor())
 	// assert
 	d, ok := di.(*PCA953xDriver)
 	if !ok {

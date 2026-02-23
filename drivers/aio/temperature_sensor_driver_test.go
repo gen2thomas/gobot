@@ -153,7 +153,7 @@ func TestTemperatureSensorWithSensorCyclicRead_PublishesTemperatureInCelsius(t *
 	time.Sleep(15 * time.Millisecond)
 
 	var eventValue float64
-	_ = d.Once(d.Event(Value), func(data interface{}) {
+	_ = d.Once(d.Event(Value), func(data any) {
 		eventValue = data.(float64)
 		sem <- true
 	})
@@ -184,7 +184,7 @@ func TestTemperatureSensorWithSensorCyclicRead_PublishesError(t *testing.T) {
 	require.NoError(t, d.Start())
 
 	// expect error
-	_ = d.Once(d.Event(Error), func(data interface{}) {
+	_ = d.Once(d.Event(Error), func(data any) {
 		assert.Equal(t, "read error", data.(error).Error())
 		sem <- true
 	})

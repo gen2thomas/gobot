@@ -32,7 +32,7 @@ func NewBlinkMDriver(c Connector, options ...func(Config)) *BlinkMDriver {
 	}
 
 	//nolint:forcetypeassert // ok here
-	b.AddCommand("Rgb", func(params map[string]interface{}) interface{} {
+	b.AddCommand("Rgb", func(params map[string]any) any {
 		red := byte(params["red"].(float64))
 		green := byte(params["green"].(float64))
 		blue := byte(params["blue"].(float64))
@@ -40,21 +40,21 @@ func NewBlinkMDriver(c Connector, options ...func(Config)) *BlinkMDriver {
 	})
 
 	//nolint:forcetypeassert // ok here
-	b.AddCommand("Fade", func(params map[string]interface{}) interface{} {
+	b.AddCommand("Fade", func(params map[string]any) any {
 		red := byte(params["red"].(float64))
 		green := byte(params["green"].(float64))
 		blue := byte(params["blue"].(float64))
 		return b.Fade(red, green, blue)
 	})
 
-	b.AddCommand("FirmwareVersion", func(_ map[string]interface{}) interface{} {
+	b.AddCommand("FirmwareVersion", func(_ map[string]any) any {
 		version, err := b.FirmwareVersion()
-		return map[string]interface{}{"version": version, "err": err}
+		return map[string]any{"version": version, "err": err}
 	})
 
-	b.AddCommand("Color", func(_ map[string]interface{}) interface{} {
+	b.AddCommand("Color", func(_ map[string]any) any {
 		color, err := b.Color()
-		return map[string]interface{}{"color": color, "err": err}
+		return map[string]any{"color": color, "err": err}
 	})
 
 	return b

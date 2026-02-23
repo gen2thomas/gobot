@@ -60,7 +60,7 @@ func TestDriverHandleEventDS3(t *testing.T) {
 	d.initEvents()
 
 	// left x stick
-	_ = d.On(d.Event("left_x"), func(data interface{}) {
+	_ = d.On(d.Event("left_x"), func(data any) {
 		assert.Equal(t, int(255), data.(int))
 		sem <- true
 	})
@@ -75,7 +75,7 @@ func TestDriverHandleEventDS3(t *testing.T) {
 	}
 
 	// square button press
-	_ = d.On(d.Event("square_press"), func(data interface{}) {
+	_ = d.On(d.Event("square_press"), func(data any) {
 		sem <- true
 	})
 	_ = d.handleButtons(js.State{
@@ -89,7 +89,7 @@ func TestDriverHandleEventDS3(t *testing.T) {
 	}
 
 	// square button release
-	_ = d.On(d.Event("square_release"), func(data interface{}) {
+	_ = d.On(d.Event("square_release"), func(data any) {
 		sem <- true
 	})
 	_ = d.handleButtons(js.State{
@@ -114,7 +114,7 @@ func TestDriverHandleEventJSONDS3(t *testing.T) {
 	d.initEvents()
 
 	// left x stick
-	_ = d.On(d.Event("left_x"), func(data interface{}) {
+	_ = d.On(d.Event("left_x"), func(data any) {
 		assert.Equal(t, int(255), data.(int))
 		sem <- true
 	})
@@ -129,7 +129,7 @@ func TestDriverHandleEventJSONDS3(t *testing.T) {
 	}
 
 	// square button press
-	_ = d.On(d.Event("square_press"), func(data interface{}) {
+	_ = d.On(d.Event("square_press"), func(data any) {
 		sem <- true
 	})
 	_ = d.handleButtons(js.State{
@@ -143,7 +143,7 @@ func TestDriverHandleEventJSONDS3(t *testing.T) {
 	}
 
 	// square button release
-	_ = d.On(d.Event("square_release"), func(data interface{}) {
+	_ = d.On(d.Event("square_release"), func(data any) {
 		sem <- true
 	})
 	_ = d.handleButtons(js.State{
@@ -168,7 +168,7 @@ func TestDriverHandleEventDS4(t *testing.T) {
 	d.initEvents()
 
 	// left x stick
-	_ = d.On(d.Event("left_x"), func(data interface{}) {
+	_ = d.On(d.Event("left_x"), func(data any) {
 		assert.Equal(t, int(255), data.(int))
 		sem <- true
 	})
@@ -183,7 +183,7 @@ func TestDriverHandleEventDS4(t *testing.T) {
 	}
 
 	// square button press
-	_ = d.On(d.Event("square_press"), func(data interface{}) {
+	_ = d.On(d.Event("square_press"), func(data any) {
 		sem <- true
 	})
 	_ = d.handleButtons(js.State{
@@ -197,7 +197,7 @@ func TestDriverHandleEventDS4(t *testing.T) {
 	}
 
 	// square button release
-	_ = d.On(d.Event("square_release"), func(data interface{}) {
+	_ = d.On(d.Event("square_release"), func(data any) {
 		sem <- true
 	})
 	_ = d.handleButtons(js.State{

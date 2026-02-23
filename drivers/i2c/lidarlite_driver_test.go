@@ -26,7 +26,7 @@ func initTestLIDARLiteDriverWithStubbedAdaptor() (*LIDARLiteDriver, *i2cTestAdap
 }
 
 func TestNewLIDARLiteDriver(t *testing.T) {
-	var di interface{} = NewLIDARLiteDriver(newI2cTestAdaptor())
+	var di any = NewLIDARLiteDriver(newI2cTestAdaptor())
 	d, ok := di.(*LIDARLiteDriver)
 	if !ok {
 		require.Fail(t, "NewLIDARLiteDriver() should have returned a *LIDARLiteDriver")

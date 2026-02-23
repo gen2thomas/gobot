@@ -51,7 +51,7 @@ func TestMagnetometerReadData(t *testing.T) {
 	a := testutil.NewBleTestAdaptor()
 	d := NewMagnetometerDriver(a)
 	require.NoError(t, d.Start())
-	err := d.On("magnetometer", func(data interface{}) {
+	err := d.On("magnetometer", func(data any) {
 		assert.InDelta(t, float32(8.738), data.(*MagnetometerData).X, 0.0)
 		assert.InDelta(t, float32(8.995), data.(*MagnetometerData).Y, 0.0)
 		assert.InDelta(t, float32(9.252), data.(*MagnetometerData).Z, 0.0)

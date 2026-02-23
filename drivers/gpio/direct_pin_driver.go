@@ -23,29 +23,29 @@ type DirectPinDriver struct {
 //	"DigitalWrite" - See DirectPinDriver.DigitalWrite
 //	"PwmWrite" - See DirectPinDriver.PwmWrite
 //	"ServoWrite" - See DirectPinDriver.ServoWrite
-func NewDirectPinDriver(a gobot.Connection, pin string, opts ...interface{}) *DirectPinDriver {
+func NewDirectPinDriver(a gobot.Connection, pin string, opts ...any) *DirectPinDriver {
 	d := &DirectPinDriver{
 		driver: newDriver(a, "DirectPin", append(opts, withPin(pin))...),
 	}
 
-	d.AddCommand("DigitalRead", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("DigitalRead", func(_ map[string]any) any {
 		val, err := d.DigitalRead()
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("DigitalWrite", func(params map[string]interface{}) interface{} {
+	d.AddCommand("DigitalWrite", func(params map[string]any) any {
 		level, _ := strconv.Atoi(params["level"].(string))
-		return d.DigitalWrite(byte(level))
+		return d.DigitalWrite(gobot.IntToByte(level))
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("PwmWrite", func(params map[string]interface{}) interface{} {
+	d.AddCommand("PwmWrite", func(params map[string]any) any {
 		level, _ := strconv.Atoi(params["level"].(string))
-		return d.PwmWrite(byte(level))
+		return d.PwmWrite(gobot.IntToByte(level))
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ServoWrite", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ServoWrite", func(params map[string]any) any {
 		level, _ := strconv.Atoi(params["level"].(string))
-		return d.ServoWrite(byte(level))
+		return d.ServoWrite(gobot.IntToByte(level))
 	})
 
 	return d

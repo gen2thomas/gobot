@@ -1,6 +1,7 @@
 package i2c
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -62,26 +63,26 @@ func NewPCA9685Driver(c Connector, options ...func(Config)) *PCA9685Driver {
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("PwmWrite", func(params map[string]interface{}) interface{} {
+	d.AddCommand("PwmWrite", func(params map[string]any) any {
 		pin := params["pin"].(string)
 		val, _ := strconv.Atoi(params["val"].(string))
-		return d.PwmWrite(pin, byte(val))
+		return d.PwmWrite(pin, gobot.IntToByte(val))
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ServoWrite", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ServoWrite", func(params map[string]any) any {
 		pin := params["pin"].(string)
 		val, _ := strconv.Atoi(params["val"].(string))
-		return d.ServoWrite(pin, byte(val))
+		return d.ServoWrite(pin, gobot.IntToByte(val))
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetPWM", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetPWM", func(params map[string]any) any {
 		channel, _ := strconv.Atoi(params["channel"].(string))
 		on, _ := strconv.Atoi(params["on"].(string))
 		off, _ := strconv.Atoi(params["off"].(string))
-		return d.SetPWM(channel, uint16(on), uint16(off)) //nolint:gosec // TODO: fix later
+		return d.SetPWM(channel, gobot.IntToUint16(on), gobot.IntToUint16(off))
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetPWMFreq", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetPWMFreq", func(params map[string]any) any {
 		freq, _ := strconv.ParseFloat(params["freq"].(string), 32)
 		return d.SetPWMFreq(float32(freq))
 	})
@@ -92,13 +93,17 @@ func NewPCA9685Driver(c Connector, options ...func(Config)) *PCA9685Driver {
 // SetPWM sets a specific channel to a pwm value from 0-4095.
 // Params:
 //
-//	channel int - the channel to send the pulse
+//	channel int - the channel to send the pulse (0..15)
 //	on uint16 - the time to start the pulse
 //	off uint16 - the time to stop the pulse
 //
 // Most typically you set "on" to a zero value, and then set "off" to your desired duty.
 func (d *PCA9685Driver) SetPWM(channel int, on uint16, off uint16) error {
-	if _, err := d.write([]byte{byte(pca9685Led0OnLReg + 4*channel), byte(on) & 0xFF}); err != nil {
+	if channel < 0 || channel > 15 {
+		return fmt.Errorf("the given channel number %d is out of range 0..15", channel)
+	}
+
+	if _, err := d.write([]byte{byte(pca9685Led0OnLReg + 4*channel), byte(on & 0xFF)}); err != nil {
 		return err
 	}
 
@@ -106,7 +111,7 @@ func (d *PCA9685Driver) SetPWM(channel int, on uint16, off uint16) error {
 		return err
 	}
 
-	if _, err := d.write([]byte{byte(pca9685Led0OffLReg + 4*channel), byte(off) & 0xFF}); err != nil {
+	if _, err := d.write([]byte{byte(pca9685Led0OffLReg + 4*channel), byte(off & 0xFF)}); err != nil {
 		return err
 	}
 
@@ -122,7 +127,7 @@ func (d *PCA9685Driver) SetPWM(channel int, on uint16, off uint16) error {
 //
 // Most typically you set "on" to a zero value, and then set "off" to your desired duty.
 func (d *PCA9685Driver) SetAllPWM(on uint16, off uint16) error {
-	if _, err := d.write([]byte{byte(pca9685AllLedOnLReg), byte(on) & 0xFF}); err != nil {
+	if _, err := d.write([]byte{byte(pca9685AllLedOnLReg), byte(on & 0xFF)}); err != nil {
 		return err
 	}
 
@@ -130,7 +135,7 @@ func (d *PCA9685Driver) SetAllPWM(on uint16, off uint16) error {
 		return err
 	}
 
-	if _, err := d.write([]byte{byte(pca9685AllLedOffLReg), byte(off) & 0xFF}); err != nil {
+	if _, err := d.write([]byte{byte(pca9685AllLedOffLReg), byte(off & 0xFF)}); err != nil {
 		return err
 	}
 

@@ -762,7 +762,6 @@ func (b *Bebop) createARStreamACK(frame ARStreamFrame) *bytes.Buffer {
 		//nolint:gosec // TODO: fix later
 		b.tmpFrame.arstreamACK.LowPacketsAck |= uint64(1) << uint64(frame.FragmentNumber)
 	} else {
-		//nolint:gosec // TODO: fix later
 		b.tmpFrame.arstreamACK.HighPacketsAck |= uint64(1) << uint64(frame.FragmentNumber-64)
 	}
 

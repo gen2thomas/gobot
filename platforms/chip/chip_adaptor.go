@@ -55,7 +55,7 @@ type Adaptor struct {
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	PWM, see [adaptors.NewPWMPinsAdaptor]
 //	SPI, see [adaptors.NewSpiBusAdaptor]
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser(system.WithDigitalPinSysfsAccess())
 	a := &Adaptor{
 		name: gobot.DefaultName("CHIP"),
@@ -64,7 +64,7 @@ func NewAdaptor(opts ...interface{}) *Adaptor {
 
 	a.pinMap = chipPins
 	baseAddr, _ := getXIOBase()
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		pin := fmt.Sprintf("XIO-P%d", i)
 		a.pinMap[pin] = sysfsPin{pin: baseAddr + i, pwmPin: -1}
 	}

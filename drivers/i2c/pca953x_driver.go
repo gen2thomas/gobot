@@ -120,10 +120,7 @@ func (d *PCA953xDriver) ReadGPIO(idx uint8) (uint8, error) {
 	if err != nil {
 		return val, err
 	}
-	val = 1 << idx & val
-	if val > 1 {
-		val = 1
-	}
+	val = min(1<<idx&val, 1)
 	return val, nil
 }
 

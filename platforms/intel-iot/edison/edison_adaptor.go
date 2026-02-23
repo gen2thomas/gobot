@@ -55,7 +55,7 @@ type Adaptor struct {
 //	AIO, see [adaptors.NewAnalogPinsAdaptor]
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	PWM, see [adaptors.NewPWMPinsAdaptor]
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser(system.WithDigitalPinSysfsAccess())
 	sys.AddDigitalPinSupport()
 	a := &Adaptor{

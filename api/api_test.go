@@ -28,7 +28,7 @@ func initTestAPI() *API {
 	g.AddRobot(newTestRobot("Robot1"))
 	g.AddRobot(newTestRobot("Robot2"))
 	g.AddRobot(newTestRobot("Robot3"))
-	g.AddCommand("TestFunction", func(params map[string]interface{}) interface{} {
+	g.AddCommand("TestFunction", func(params map[string]any) any {
 		message := params["message"].(string)
 		return fmt.Sprintf("hey %v", message)
 	})
@@ -92,10 +92,10 @@ func TestMcp(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.NotNil(t, body["MCP"].(map[string]interface{})["robots"])
-	assert.NotNil(t, body["MCP"].(map[string]interface{})["commands"])
+	assert.NotNil(t, body["MCP"].(map[string]any)["robots"])
+	assert.NotNil(t, body["MCP"].(map[string]any)["commands"])
 }
 
 func TestMcpCommands(t *testing.T) {
@@ -104,13 +104,13 @@ func TestMcpCommands(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, []interface{}{"TestFunction"}, body["commands"])
+	assert.Equal(t, []any{"TestFunction"}, body["commands"])
 }
 
 func TestExecuteMcpCommand(t *testing.T) {
-	var body interface{}
+	var body any
 	a := initTestAPI()
 
 	// known command
@@ -123,7 +123,7 @@ func TestExecuteMcpCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "hey Beep Boop", body.(map[string]interface{})["result"])
+	assert.Equal(t, "hey Beep Boop", body.(map[string]any)["result"])
 
 	// unknown command
 	request, _ = http.NewRequest("GET",
@@ -135,7 +135,7 @@ func TestExecuteMcpCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "Unknown Command", body.(map[string]interface{})["error"])
+	assert.Equal(t, "Unknown Command", body.(map[string]any)["error"])
 }
 
 func TestRobots(t *testing.T) {
@@ -144,9 +144,9 @@ func TestRobots(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Len(t, body["robots"].([]interface{}), 3)
+	assert.Len(t, body["robots"].([]any), 3)
 }
 
 func TestRobot(t *testing.T) {
@@ -157,9 +157,9 @@ func TestRobot(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "Robot1", body["robot"].(map[string]interface{})["name"].(string))
+	assert.Equal(t, "Robot1", body["robot"].(map[string]any)["name"].(string))
 
 	// unknown robot
 	request, _ = http.NewRequest("GET", "/api/robots/UnknownRobot1", nil)
@@ -177,9 +177,9 @@ func TestRobotDevices(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Len(t, body["devices"].([]interface{}), 3)
+	assert.Len(t, body["devices"].([]any), 3)
 
 	// unknown robot
 	request, _ = http.NewRequest("GET", "/api/robots/UnknownRobot1/devices", nil)
@@ -197,9 +197,9 @@ func TestRobotCommands(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, []interface{}{"robotTestFunction"}, body["commands"])
+	assert.Equal(t, []any{"robotTestFunction"}, body["commands"])
 
 	// unknown robot
 	request, _ = http.NewRequest("GET", "/api/robots/UnknownRobot1/commands", nil)
@@ -210,7 +210,7 @@ func TestRobotCommands(t *testing.T) {
 }
 
 func TestExecuteRobotCommand(t *testing.T) {
-	var body interface{}
+	var body any
 	a := initTestAPI()
 	// known command
 	request, _ := http.NewRequest("GET",
@@ -222,7 +222,7 @@ func TestExecuteRobotCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "hey Robot1, Beep Boop", body.(map[string]interface{})["result"])
+	assert.Equal(t, "hey Robot1, Beep Boop", body.(map[string]any)["result"])
 
 	// unknown command
 	request, _ = http.NewRequest("GET",
@@ -234,7 +234,7 @@ func TestExecuteRobotCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "Unknown Command", body.(map[string]interface{})["error"])
+	assert.Equal(t, "Unknown Command", body.(map[string]any)["error"])
 
 	// uknown robot
 	request, _ = http.NewRequest("GET",
@@ -245,7 +245,7 @@ func TestExecuteRobotCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "no Robot found with the name UnknownRobot1", body.(map[string]interface{})["error"])
+	assert.Equal(t, "no Robot found with the name UnknownRobot1", body.(map[string]any)["error"])
 }
 
 func TestRobotDevice(t *testing.T) {
@@ -259,9 +259,9 @@ func TestRobotDevice(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "Device1", body["device"].(map[string]interface{})["name"].(string))
+	assert.Equal(t, "Device1", body["device"].(map[string]any)["name"].(string))
 
 	// unknown device
 	request, _ = http.NewRequest("GET",
@@ -283,9 +283,9 @@ func TestRobotDeviceCommands(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Len(t, body["commands"].([]interface{}), 2)
+	assert.Len(t, body["commands"].([]any), 2)
 
 	// unknown device
 	request, _ = http.NewRequest("GET",
@@ -298,7 +298,7 @@ func TestRobotDeviceCommands(t *testing.T) {
 }
 
 func TestExecuteRobotDeviceCommand(t *testing.T) {
-	var body interface{}
+	var body any
 	a := initTestAPI()
 
 	// known command
@@ -311,7 +311,7 @@ func TestExecuteRobotDeviceCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "hello human", body.(map[string]interface{})["result"].(string))
+	assert.Equal(t, "hello human", body.(map[string]any)["result"].(string))
 
 	// unknown command
 	request, _ = http.NewRequest("GET",
@@ -323,7 +323,7 @@ func TestExecuteRobotDeviceCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "Unknown Command", body.(map[string]interface{})["error"])
+	assert.Equal(t, "Unknown Command", body.(map[string]any)["error"])
 
 	// unknown device
 	request, _ = http.NewRequest("GET",
@@ -334,7 +334,7 @@ func TestExecuteRobotDeviceCommand(t *testing.T) {
 	a.ServeHTTP(response, request)
 
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "no Device found with the name UnknownDevice1", body.(map[string]interface{})["error"])
+	assert.Equal(t, "no Device found with the name UnknownDevice1", body.(map[string]any)["error"])
 }
 
 func TestRobotConnections(t *testing.T) {
@@ -345,9 +345,9 @@ func TestRobotConnections(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Len(t, body["connections"].([]interface{}), 3)
+	assert.Len(t, body["connections"].([]any), 3)
 
 	// unknown robot
 	request, _ = http.NewRequest("GET", "/api/robots/UnknownRobot1/connections", nil)
@@ -368,9 +368,9 @@ func TestRobotConnection(t *testing.T) {
 	response := httptest.NewRecorder()
 	a.ServeHTTP(response, request)
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
-	assert.Equal(t, "Connection1", body["connection"].(map[string]interface{})["name"].(string))
+	assert.Equal(t, "Connection1", body["connection"].(map[string]any)["name"].(string))
 
 	// unknown connection
 	request, _ = http.NewRequest("GET",
@@ -420,7 +420,7 @@ func TestRobotDeviceEvent(t *testing.T) {
 	// unknown event
 	response, _ := http.Get(server.URL + eventsURL + "UnknownEvent")
 
-	var body map[string]interface{}
+	var body map[string]any
 	_ = json.NewDecoder(response.Body).Decode(&body)
 	assert.Equal(t, "No Event found with the name UnknownEvent", body["error"])
 }

@@ -33,7 +33,7 @@ func TestEventerOn(t *testing.T) {
 	e := NewEventer()
 
 	sem := make(chan bool)
-	_ = e.On("test", func(data interface{}) {
+	_ = e.On("test", func(data any) {
 		sem <- true
 	})
 
@@ -53,7 +53,7 @@ func TestEventerOnce(t *testing.T) {
 	e := NewEventer()
 
 	sem := make(chan bool)
-	_ = e.Once("test", func(data interface{}) {
+	_ = e.Once("test", func(data any) {
 		sem <- true
 	})
 

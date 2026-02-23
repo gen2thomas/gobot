@@ -37,7 +37,7 @@ type PocketBeagleAdaptor struct {
 //	AIO, see [adaptors.NewAnalogPinsAdaptor]
 //	GPIO, see [adaptors.NewDigitalPinsAdaptor]
 //	PWM, see [adaptors.NewPWMPinsAdaptor]
-func NewAdaptor(opts ...interface{}) *PocketBeagleAdaptor {
+func NewAdaptor(opts ...any) *PocketBeagleAdaptor {
 	sys := system.NewAccesser()
 	a := PocketBeagleAdaptor{
 		Adaptor: beaglebone.NewAdaptor(opts...),

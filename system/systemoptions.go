@@ -4,7 +4,7 @@ import (
 	"gobot.io/x/gobot/v2"
 )
 
-// accesserOptionApplier is the interface for system options. This provides the possibility for change the systems
+// AccesserOptionApplier is the interface for system options. This provides the possibility for change the systems
 // behavior by the caller/user when creating the system access, e.g. by "NewAccesser().Add..".
 // The interface needs to be implemented by each configurable option type.
 type AccesserOptionApplier interface {

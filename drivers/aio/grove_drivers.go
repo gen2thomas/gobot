@@ -11,7 +11,7 @@ type GroveRotaryDriver struct {
 //
 // Supported options: see [aio.NewAnalogSensorDriver]
 // Adds the following API Commands: see [aio.NewAnalogSensorDriver]
-func NewGroveRotaryDriver(a AnalogReader, pin string, opts ...interface{}) *GroveRotaryDriver {
+func NewGroveRotaryDriver(a AnalogReader, pin string, opts ...any) *GroveRotaryDriver {
 	d := GroveRotaryDriver{
 		AnalogSensorDriver: NewAnalogSensorDriver(a, pin, opts...),
 	}
@@ -30,7 +30,7 @@ type GroveLightSensorDriver struct {
 //
 // Supported options: see [aio.NewAnalogSensorDriver]
 // Adds the following API Commands: see [aio.NewAnalogSensorDriver]
-func NewGroveLightSensorDriver(a AnalogReader, pin string, opts ...interface{}) *GroveLightSensorDriver {
+func NewGroveLightSensorDriver(a AnalogReader, pin string, opts ...any) *GroveLightSensorDriver {
 	d := GroveLightSensorDriver{
 		AnalogSensorDriver: NewAnalogSensorDriver(a, pin, opts...),
 	}
@@ -52,7 +52,7 @@ type GrovePiezoVibrationSensorDriver struct {
 func NewGrovePiezoVibrationSensorDriver(
 	a AnalogReader,
 	pin string,
-	opts ...interface{},
+	opts ...any,
 ) *GrovePiezoVibrationSensorDriver {
 	d := &GrovePiezoVibrationSensorDriver{
 		AnalogSensorDriver: NewAnalogSensorDriver(a, pin, opts...),
@@ -61,7 +61,7 @@ func NewGrovePiezoVibrationSensorDriver(
 
 	d.AddEvent(Vibration)
 
-	if err := d.On(d.Event(Data), func(data interface{}) {
+	if err := d.On(d.Event(Data), func(data any) {
 		if data.(int) > 1000 { //nolint:forcetypeassert // no error return value, so there is no better way
 			d.Publish(d.Event(Vibration), data)
 		}
@@ -81,7 +81,7 @@ type GroveSoundSensorDriver struct {
 //
 // Supported options: see [aio.NewAnalogSensorDriver]
 // Adds the following API Commands: see [aio.NewAnalogSensorDriver]
-func NewGroveSoundSensorDriver(a AnalogReader, pin string, opts ...interface{}) *GroveSoundSensorDriver {
+func NewGroveSoundSensorDriver(a AnalogReader, pin string, opts ...any) *GroveSoundSensorDriver {
 	d := GroveSoundSensorDriver{
 		AnalogSensorDriver: NewAnalogSensorDriver(a, pin, opts...),
 	}

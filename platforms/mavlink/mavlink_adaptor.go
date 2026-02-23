@@ -9,7 +9,7 @@ import (
 	common "gobot.io/x/gobot/v2/platforms/mavlink/common"
 )
 
-// Adaptor is a Mavlink transport adaptor.
+// BaseAdaptor is a Mavlink transport adaptor.
 type BaseAdaptor interface {
 	gobot.Connection
 

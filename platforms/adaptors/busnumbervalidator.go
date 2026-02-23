@@ -1,6 +1,9 @@
 package adaptors
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type BusNumberValidator struct {
 	validNumbers []int
@@ -12,10 +15,8 @@ func NewBusNumberValidator(validNumbers []int) *BusNumberValidator {
 }
 
 func (bnv *BusNumberValidator) Validate(busNr int) error {
-	for _, validNumber := range bnv.validNumbers {
-		if validNumber == busNr {
-			return nil
-		}
+	if slices.Contains(bnv.validNumbers, busNr) {
+		return nil
 	}
 
 	return fmt.Errorf("bus number %d out of range %v", busNr, bnv.validNumbers)

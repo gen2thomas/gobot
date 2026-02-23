@@ -32,17 +32,23 @@ const (
 	bmp388RegConf         = 0x1F // config filter for IIR coefficients
 	bmp388RegCalib00      = 0x31
 	bmp388RegCMD          = 0x7E
+)
 
-	// bits 0, 1 of control register
+// bits 0, 1 of control register
+const (
 	bmp388PWRCTRLPressEnableBit = 0x01
 	bmp388PWRCTRLTempEnableBit  = 0x02
+)
 
-	// bits 4, 5 of control register (will be shifted on write)
+// bits 4, 5 of control register (will be shifted on write)
+const (
 	bmp388PWRCTRLSleep  = 0x00
 	bmp388PWRCTRLForced = 0x01 // same as 0x02
 	bmp388PWRCTRLNormal = 0x03
+)
 
-	// bits 1, 2 ,3 of config filter IIR filter coefficients (will be shifted on write)
+// bits 1, 2 ,3 of config filter IIR filter coefficients (will be shifted on write)
+const (
 	bmp388ConfFilterCoef0   BMP388IIRFilter = 0 // bypass-mode
 	bmp388ConfFilterCoef1   BMP388IIRFilter = 1
 	bmp388ConfFilterCoef3   BMP388IIRFilter = 2
@@ -51,15 +57,19 @@ const (
 	bmp388ConfFilterCoef31  BMP388IIRFilter = 5
 	bmp388ConfFilterCoef63  BMP388IIRFilter = 6
 	bmp388ConfFilterCoef127 BMP388IIRFilter = 7
+)
 
-	// oversampling rate, a single value is used (could be different for pressure and temperature)
+// oversampling rate, a single value is used (could be different for pressure and temperature)
+const (
 	BMP388AccuracyUltraLow  BMP388Accuracy = 0 // x1 sample
 	BMP388AccuracyLow       BMP388Accuracy = 1 // x2 samples
 	BMP388AccuracyStandard  BMP388Accuracy = 2 // x4 samples
 	BMP388AccuracyHigh      BMP388Accuracy = 3 // x8 samples
 	BMP388AccuracyUltraHigh BMP388Accuracy = 4 // x16 samples
 	BMP388AccuracyHighest   BMP388Accuracy = 5 // x32 samples
+)
 
+const (
 	bmp388CMDReserved        = 0x00 // reserved, no command
 	bmp388CMDExtModeEnMiddle = 0x34
 	bmp388CMDFifoFlush       = 0xB0 // clears all data in the FIFO, does not change FIFO_CONFIG registers

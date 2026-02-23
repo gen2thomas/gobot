@@ -118,7 +118,7 @@ func NewHD44780Driver(
 	pinRS string,
 	pinEN string,
 	pinDataBits HD44780DataPin,
-	opts ...interface{},
+	opts ...any,
 ) *HD44780Driver {
 	d := &HD44780Driver{
 		driver:     newDriver(a, "HD44780"),
@@ -423,8 +423,8 @@ func (d *HD44780Driver) CreateChar(pos int, charMap [8]byte) error {
 		return err
 	}
 
-	for i := range charMap {
-		if err := d.writeChar(int(charMap[i])); err != nil {
+	for _, val := range charMap {
+		if err := d.writeChar(int(val)); err != nil {
 			return err
 		}
 	}

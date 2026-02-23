@@ -45,7 +45,7 @@ func NewMAX7219Driver(
 	a gobot.Connection,
 	clockPin, dataPin, csPin string,
 	count uint,
-	opts ...interface{},
+	opts ...any,
 ) *MAX7219Driver {
 	d := &MAX7219Driver{
 		driver:   newDriver(a, "MAX7219", opts...),

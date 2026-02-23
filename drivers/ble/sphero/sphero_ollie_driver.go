@@ -98,6 +98,10 @@ func newOllieBaseDriver(
 
 // SetTXPower sets transmit level
 func (d *OllieDriver) SetTXPower(level int) error {
+	if level < 0 || level > 255 {
+		return fmt.Errorf("TX power level %d is out of range 0..255", level)
+	}
+
 	buf := []byte{byte(level)}
 
 	if err := d.Adaptor().WriteCharacteristic(txPowerChara, buf); err != nil {
@@ -144,7 +148,6 @@ func (d *OllieDriver) SetRGB(r uint8, g uint8, b uint8) {
 
 // Roll tells the Ollie to roll
 func (d *OllieDriver) Roll(speed uint8, heading uint16) {
-	//nolint:gosec // TODO: fix later
 	d.sendCraftPacket([]uint8{speed, uint8(heading >> 8), uint8(heading & 0xFF), 0x01}, 0x02, 0x30)
 }
 

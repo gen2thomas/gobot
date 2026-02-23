@@ -33,7 +33,7 @@ const (
 )
 
 // BMP180OversamplingMode is the oversampling ratio of the pressure measurement.
-type BMP180OversamplingMode uint
+type BMP180OversamplingMode uint8
 
 type bmp180CalibrationCoefficients struct {
 	ac1 int16

@@ -23,26 +23,26 @@ type LedDriver struct {
 //	"Toggle" - See LedDriver.Toggle
 //	"On" - See LedDriver.On
 //	"Off" - See LedDriver.Off
-func NewLedDriver(a DigitalWriter, pin string, opts ...interface{}) *LedDriver {
+func NewLedDriver(a DigitalWriter, pin string, opts ...any) *LedDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &LedDriver{
 		driver: newDriver(a.(gobot.Connection), "LED", append(opts, withPin(pin))...),
 	}
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Brightness", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Brightness", func(params map[string]any) any {
 		level := byte(params["level"].(float64))
 		return d.Brightness(level)
 	})
 
-	d.AddCommand("Toggle", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Toggle", func(_ map[string]any) any {
 		return d.Toggle()
 	})
 
-	d.AddCommand("On", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("On", func(_ map[string]any) any {
 		return d.On()
 	})
 
-	d.AddCommand("Off", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Off", func(_ map[string]any) any {
 		return d.Off()
 	})
 

@@ -48,12 +48,12 @@ func newTestDriver(adaptor *testAdaptor, name string, pin string) *testDriver {
 
 	t.AddEvent("TestEvent")
 
-	t.AddCommand("TestDriverCommand", func(params map[string]interface{}) interface{} {
+	t.AddCommand("TestDriverCommand", func(params map[string]any) any {
 		name := params["name"].(string)
 		return fmt.Sprintf("hello %v", name)
 	})
 
-	t.AddCommand("DriverCommand", func(params map[string]interface{}) interface{} {
+	t.AddCommand("DriverCommand", func(params map[string]any) any {
 		name := params["name"].(string)
 		return fmt.Sprintf("hello %v", name)
 	})
@@ -97,7 +97,7 @@ func newTestRobot(name string) *gobot.Robot {
 		[]gobot.Device{driver1, driver2, driver3},
 		work,
 	)
-	r.AddCommand("robotTestFunction", func(params map[string]interface{}) interface{} {
+	r.AddCommand("robotTestFunction", func(params map[string]any) any {
 		message := params["message"].(string)
 		robot := params["robot"].(string)
 		return fmt.Sprintf("hey %v, %v", robot, message)

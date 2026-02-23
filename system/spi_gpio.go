@@ -116,7 +116,7 @@ func (s *spiGpio) transferByte(txByte uint8) (uint8, error) {
 	rxByte := uint8(0)
 	bitMask := uint8(0x80) // start at MSBit
 
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		if err := s.sdoPin.Write(int(txByte & bitMask)); err != nil {
 			return 0, err
 		}

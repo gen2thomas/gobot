@@ -47,7 +47,7 @@ func TestAccelerometerReadData(t *testing.T) {
 	d := NewAccelerometerDriver(a)
 	require.NoError(t, d.Start())
 
-	err := d.On("accelerometer", func(data interface{}) {
+	err := d.On("accelerometer", func(data any) {
 		assert.InDelta(t, float32(8.738), data.(*AccelerometerData).X, 0.0)
 		assert.InDelta(t, float32(8.995), data.(*AccelerometerData).Y, 0.0)
 		assert.InDelta(t, float32(9.252), data.(*AccelerometerData).Z, 0.0)

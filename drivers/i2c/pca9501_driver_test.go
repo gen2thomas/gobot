@@ -17,18 +17,18 @@ import (
 var _ gobot.Driver = (*PCA9501Driver)(nil)
 
 var (
-	pinVal = map[string]interface{}{
+	pinVal = map[string]any{
 		"pin": uint8(7),
 		"val": uint8(0),
 	}
-	pin = map[string]interface{}{
+	pin = map[string]any{
 		"pin": uint8(7),
 	}
-	addressVal = map[string]interface{}{
+	addressVal = map[string]any{
 		"address": uint8(15),
 		"val":     uint8(7),
 	}
-	address = map[string]interface{}{
+	address = map[string]any{
 		"address": uint8(15),
 	}
 )
@@ -44,7 +44,7 @@ func initPCA9501WithStubbedAdaptor() (*PCA9501Driver, *i2cTestAdaptor) {
 
 func TestNewPCA9501Driver(t *testing.T) {
 	// arrange, act
-	var di interface{} = NewPCA9501Driver(newI2cTestAdaptor())
+	var di any = NewPCA9501Driver(newI2cTestAdaptor())
 	// assert
 	d, ok := di.(*PCA9501Driver)
 	if !ok {
@@ -83,7 +83,7 @@ func TestPCA9501CommandsWriteGPIO(t *testing.T) {
 	// act
 	result := d.Command("WriteGPIO")(pinVal)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCA9501CommandsReadGPIO(t *testing.T) {
@@ -95,7 +95,7 @@ func TestPCA9501CommandsReadGPIO(t *testing.T) {
 	// act
 	result := d.Command("ReadGPIO")(pin)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCA9501CommandsWriteEEPROM(t *testing.T) {
@@ -107,7 +107,7 @@ func TestPCA9501CommandsWriteEEPROM(t *testing.T) {
 	// act
 	result := d.Command("WriteEEPROM")(addressVal)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCA9501CommandsReadEEPROM(t *testing.T) {
@@ -122,7 +122,7 @@ func TestPCA9501CommandsReadEEPROM(t *testing.T) {
 	// act
 	result := d.Command("ReadEEPROM")(address)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCA9501WriteGPIO(t *testing.T) {

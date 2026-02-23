@@ -52,10 +52,7 @@ func (p *SerialPortDriver) Read(b []byte) (int, error) {
 		return 0, nil
 	}
 
-	n := len(b)
-	if len(p.responseData) < n {
-		n = len(p.responseData)
-	}
+	n := min(len(p.responseData), len(b))
 	copy(b, p.responseData[:n])
 
 	if len(p.responseData) > n {

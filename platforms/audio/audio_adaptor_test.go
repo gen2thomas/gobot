@@ -1,4 +1,3 @@
-// Based on aplay audio adaptor written by @colemanserious (https://github.com/colemanserious)
 package audio
 
 import (

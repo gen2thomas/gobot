@@ -70,22 +70,22 @@ func TestNewDirectPinDriver_options(t *testing.T) {
 }
 
 func TestDirectPin_Commands(t *testing.T) {
-	var ret map[string]interface{}
-	var err interface{}
+	var ret map[string]any
+	var err any
 
 	d := initTestDirectPinDriver()
-	ret = d.Command("DigitalRead")(nil).(map[string]interface{})
+	ret = d.Command("DigitalRead")(nil).(map[string]any)
 
 	assert.Equal(t, 1, ret["val"].(int))
 	assert.Nil(t, ret["err"])
 
-	err = d.Command("DigitalWrite")(map[string]interface{}{"level": "1"})
+	err = d.Command("DigitalWrite")(map[string]any{"level": "1"})
 	require.EqualError(t, err.(error), "write error")
 
-	err = d.Command("PwmWrite")(map[string]interface{}{"level": "1"})
+	err = d.Command("PwmWrite")(map[string]any{"level": "1"})
 	require.EqualError(t, err.(error), "write error")
 
-	err = d.Command("ServoWrite")(map[string]interface{}{"level": "1"})
+	err = d.Command("ServoWrite")(map[string]any{"level": "1"})
 	require.EqualError(t, err.(error), "write error")
 }
 

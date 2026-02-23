@@ -53,7 +53,7 @@ type AnalogSensorDriver struct {
 //
 //	"Read"    - See AnalogDriverSensor.Read
 //	"ReadRaw" - See AnalogDriverSensor.ReadRaw
-func NewAnalogSensorDriver(a AnalogReader, pin string, opts ...interface{}) *AnalogSensorDriver {
+func NewAnalogSensorDriver(a AnalogReader, pin string, opts ...any) *AnalogSensorDriver {
 	d := &AnalogSensorDriver{
 		driver:    newDriver(a, "AnalogSensor"),
 		sensorCfg: &sensorConfiguration{scale: func(input int) float64 { return float64(input) }},
@@ -78,14 +78,14 @@ func NewAnalogSensorDriver(a AnalogReader, pin string, opts ...interface{}) *Ana
 		}
 	}
 
-	d.AddCommand("Read", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Read", func(_ map[string]any) any {
 		val, err := d.Read()
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
-	d.AddCommand("ReadRaw", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ReadRaw", func(_ map[string]any) any {
 		val, err := d.ReadRaw()
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	return d

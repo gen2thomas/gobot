@@ -86,10 +86,7 @@ func (rwc readWriteCloser) Read(b []byte) (int, error) {
 		log.Printf("no content stored in %s", rwc.id)
 		return 0, nil
 	}
-	size := len(b)
-	if len(data) < size {
-		size = len(data)
-	}
+	size := min(len(data), len(b))
 	copy(b, data[:size])
 	testReadDataMap[rwc.id] = data[size:]
 	return size, nil
@@ -139,7 +136,7 @@ func TestProcessProtocolVersion(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name())
 	rwc.addTestReadData(testDataProtocolResponse)
 
-	_ = b.Once(b.Event("ProtocolVersion"), func(data interface{}) {
+	_ = b.Once(b.Event("ProtocolVersion"), func(data any) {
 		assert.Equal(t, "2.3", data)
 		sem <- true
 	})
@@ -158,7 +155,7 @@ func TestProcessAnalogRead0(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name(), testDataCapabilitiesResponse, testDataAnalogMappingResponse)
 	rwc.addTestReadData([]byte{0xE0, 0x23, 0x05})
 
-	_ = b.Once(b.Event("AnalogRead0"), func(data interface{}) {
+	_ = b.Once(b.Event("AnalogRead0"), func(data any) {
 		assert.Equal(t, 675, data)
 		sem <- true
 	})
@@ -177,7 +174,7 @@ func TestProcessAnalogRead1(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name(), testDataCapabilitiesResponse, testDataAnalogMappingResponse)
 	rwc.addTestReadData([]byte{0xE1, 0x23, 0x06})
 
-	_ = b.Once(b.Event("AnalogRead1"), func(data interface{}) {
+	_ = b.Once(b.Event("AnalogRead1"), func(data any) {
 		assert.Equal(t, 803, data)
 		sem <- true
 	})
@@ -197,7 +194,7 @@ func TestProcessDigitalRead2(t *testing.T) {
 	b.pins[2].Mode = Input
 	rwc.addTestReadData([]byte{0x90, 0x04, 0x00})
 
-	_ = b.Once(b.Event("DigitalRead2"), func(data interface{}) {
+	_ = b.Once(b.Event("DigitalRead2"), func(data any) {
 		assert.Equal(t, 1, data)
 		sem <- true
 	})
@@ -217,7 +214,7 @@ func TestProcessDigitalRead4(t *testing.T) {
 	b.pins[4].Mode = Input
 	rwc.addTestReadData([]byte{0x90, 0x16, 0x00})
 
-	_ = b.Once(b.Event("DigitalRead4"), func(data interface{}) {
+	_ = b.Once(b.Event("DigitalRead4"), func(data any) {
 		assert.Equal(t, 1, data)
 		sem <- true
 	})
@@ -257,7 +254,7 @@ func TestProcessPinState13(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name(), testDataCapabilitiesResponse, testDataAnalogMappingResponse)
 	rwc.addTestReadData([]byte{240, 110, 13, 1, 1, 247})
 
-	_ = b.Once(b.Event("PinState13"), func(data interface{}) {
+	_ = b.Once(b.Event("PinState13"), func(data any) {
 		assert.Equal(t, Pin{[]int{0, 1, 4}, 1, 0, 1, 127}, data)
 		sem <- true
 	})
@@ -296,7 +293,7 @@ func TestProcessI2cReply(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name())
 	rwc.addTestReadData([]byte{240, 119, 9, 0, 0, 0, 24, 1, 1, 0, 26, 1, 247})
 
-	_ = b.Once(b.Event("I2cReply"), func(data interface{}) {
+	_ = b.Once(b.Event("I2cReply"), func(data any) {
 		assert.Equal(t, I2cReply{
 			Address:  9,
 			Register: 0,
@@ -319,7 +316,7 @@ func TestProcessFirmwareQuery(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name())
 	rwc.addTestReadData(testDataFirmwareResponse)
 
-	_ = b.Once(b.Event("FirmwareQuery"), func(data interface{}) {
+	_ = b.Once(b.Event("FirmwareQuery"), func(data any) {
 		assert.Equal(t, "StandardFirmata.ino", data)
 		sem <- true
 	})
@@ -338,7 +335,7 @@ func TestProcessStringData(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name())
 	rwc.addTestReadData(append([]byte{240, 0x71}, append([]byte("Hello Firmata!"), 247)...))
 
-	_ = b.Once(b.Event("StringData"), func(data interface{}) {
+	_ = b.Once(b.Event("StringData"), func(data any) {
 		assert.Equal(t, "Hello Firmata!", data)
 		sem <- true
 	})
@@ -358,19 +355,19 @@ func TestConnect(t *testing.T) {
 
 	rwc.addTestReadData(testDataProtocolResponse)
 
-	_ = b.Once(b.Event("ProtocolVersion"), func(data interface{}) {
+	_ = b.Once(b.Event("ProtocolVersion"), func(data any) {
 		rwc.addTestReadData(testDataFirmwareResponse)
 	})
 
-	_ = b.Once(b.Event("FirmwareQuery"), func(data interface{}) {
+	_ = b.Once(b.Event("FirmwareQuery"), func(data any) {
 		rwc.addTestReadData(testDataCapabilitiesResponse)
 	})
 
-	_ = b.Once(b.Event("CapabilityQuery"), func(data interface{}) {
+	_ = b.Once(b.Event("CapabilityQuery"), func(data any) {
 		rwc.addTestReadData(testDataAnalogMappingResponse)
 	})
 
-	_ = b.Once(b.Event("AnalogMappingQuery"), func(data interface{}) {
+	_ = b.Once(b.Event("AnalogMappingQuery"), func(data any) {
 		rwc.addTestReadData(testDataProtocolResponse)
 	})
 
@@ -423,7 +420,7 @@ func TestProcessSysexData(t *testing.T) {
 	b, rwc := initTestFirmataWithReadWriteCloser(t.Name())
 	rwc.addTestReadData([]byte{240, 17, 1, 2, 3, 247})
 
-	_ = b.Once("SysexResponse", func(data interface{}) {
+	_ = b.Once("SysexResponse", func(data any) {
 		assert.Equal(t, []byte{240, 17, 1, 2, 3, 247}, data)
 		sem <- true
 	})

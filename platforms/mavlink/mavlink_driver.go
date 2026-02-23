@@ -12,7 +12,7 @@ const (
 	PacketEvent = "packet"
 	// MessageEvent event
 	MessageEvent = "message"
-	// ErrorIOEEvent event
+	// ErrorIOEvent event
 	ErrorIOEvent = "errorIO"
 	// ErrorMAVLinkEvent event
 	ErrorMAVLinkEvent = "errorMAVLink"
@@ -26,7 +26,7 @@ type Driver struct {
 	interval   time.Duration
 }
 
-type MavlinkInterface interface{}
+type MavlinkInterface any
 
 // NewDriver creates a new mavlink driver.
 //

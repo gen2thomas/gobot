@@ -28,10 +28,7 @@ var (
 )
 
 func (readWriteCloser) Read(b []byte) (int, error) {
-	size := len(b)
-	if len(testReadData) < size {
-		size = len(testReadData)
-	}
+	size := min(len(testReadData), len(b))
 	copy(b, testReadData[:size])
 	testReadData = testReadData[size:]
 

@@ -1,6 +1,7 @@
 package gpio
 
 import (
+	"maps"
 	"math"
 	"strings"
 
@@ -46,7 +47,7 @@ type TM1638Driver struct {
 // Supported options:
 //
 //	"WithName"
-func NewTM1638Driver(a gobot.Connection, clockPin, dataPin, strobePin string, opts ...interface{}) *TM1638Driver {
+func NewTM1638Driver(a gobot.Connection, clockPin, dataPin, strobePin string, opts ...any) *TM1638Driver {
 	d := &TM1638Driver{
 		driver:    newDriver(a, "TM1638", opts...),
 		pinClock:  NewDirectPinDriver(a, clockPin),
@@ -72,7 +73,7 @@ func (d *TM1638Driver) SetLED(color byte, pos byte) error {
 // SetDisplay cuts and sends a byte array to the display (without dots)
 func (d *TM1638Driver) SetDisplay(data []byte) error {
 	minLength := int(math.Min(8, float64(len(data))))
-	for i := 0; i < minLength; i++ {
+	for i := range minLength {
 		if err := d.SendChar(byte(i), data[i], false); err != nil {
 			return err
 		}
@@ -84,7 +85,7 @@ func (d *TM1638Driver) SetDisplay(data []byte) error {
 func (d *TM1638Driver) SetDisplayText(text string) error {
 	data := d.fromStringToByteArray(text)
 	minLength := int(math.Min(8, float64(len(data))))
-	for i := 0; i < minLength; i++ {
+	for i := range minLength {
 		if err := d.SendChar(byte(i), data[i], false); err != nil {
 			return err
 		}
@@ -106,9 +107,7 @@ func (d *TM1638Driver) SendChar(pos byte, data byte, dot bool) error {
 
 // AddFonts adds new custom fonts or modify the representation of existing ones
 func (d *TM1638Driver) AddFonts(fonts map[string]byte) {
-	for k, v := range fonts {
-		d.fonts[k] = v
-	}
+	maps.Copy(d.fonts, fonts)
 }
 
 // ClearFonts removes all the fonts from the driver
@@ -138,7 +137,7 @@ func (d *TM1638Driver) initialize() error {
 	if err := d.send(TM1638AddrCmd); err != nil {
 		return err
 	}
-	for i := 0; i < 16; i++ {
+	for range 16 {
 		if err := d.send(TM1638WriteDisp); err != nil {
 			return err
 		}
@@ -190,7 +189,7 @@ func (d *TM1638Driver) sendCommand(cmd byte) error {
 
 // send writes data on the module
 func (d *TM1638Driver) send(data byte) error {
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		if err := d.pinClock.Off(); err != nil {
 			return err
 		}

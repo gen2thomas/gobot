@@ -194,7 +194,7 @@ func crcAccumulate(data uint8, crcAccum uint16) uint16 {
 	/*Accumulate one byte of data into the CRC*/
 	var tmp uint8
 
-	tmp = data ^ (uint8)(crcAccum&0xff) //nolint:gosec // ok here
+	tmp = data ^ (uint8)(crcAccum&0xff)
 	tmp ^= (tmp << 4)
 	crcAccum = (crcAccum >> 8) ^ (uint16(tmp) << 8) ^ (uint16(tmp) << 3) ^ (uint16(tmp) >> 4)
 	return crcAccum

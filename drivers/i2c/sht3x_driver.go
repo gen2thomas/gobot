@@ -206,7 +206,7 @@ func (d *SHT3xDriver) sendCommandDelayGetResponse(send []byte, delay *time.Durat
 	}
 
 	read := make([]uint16, expect)
-	for i := 0; i < expect; i++ {
+	for i := range expect {
 		crc := crc8.Checksum(buf[i*3:i*3+2], d.crcTable)
 		if buf[i*3+2] != crc {
 			return nil, ErrInvalidCrc

@@ -190,13 +190,13 @@ func TestDigitalPinConcurrency(t *testing.T) {
 	translate := func(pin string) (string, int, error) { line, err := strconv.Atoi(pin); return "", line, err }
 	sys := system.NewAccesser(system.WithDigitalPinSysfsAccess())
 
-	for retry := 0; retry < 20; retry++ {
+	for range 20 {
 
 		a := NewDigitalPinsAdaptor(sys, translate)
 		_ = a.Connect()
 		var wg sync.WaitGroup
 
-		for i := 0; i < 20; i++ {
+		for i := range 20 {
 			wg.Add(1)
 			pinAsString := strconv.Itoa(i)
 			go func(pin string) {

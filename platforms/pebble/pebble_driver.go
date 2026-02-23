@@ -39,17 +39,17 @@ func NewDriver(adaptor *Adaptor) *Driver {
 	p.AddEvent("tap")
 
 	//nolint:forcetypeassert // ok here
-	p.AddCommand("publish_event", func(params map[string]interface{}) interface{} {
+	p.AddCommand("publish_event", func(params map[string]any) any {
 		p.PublishEvent(params["name"].(string), params["data"].(string))
 		return nil
 	})
 	//nolint:forcetypeassert // ok here
-	p.AddCommand("send_notification", func(params map[string]interface{}) interface{} {
+	p.AddCommand("send_notification", func(params map[string]any) any {
 		p.SendNotification(params["message"].(string))
 		return nil
 	})
 
-	p.AddCommand("pending_message", func(_ map[string]interface{}) interface{} {
+	p.AddCommand("pending_message", func(_ map[string]any) any {
 		return p.PendingMessage()
 	})
 
@@ -76,7 +76,7 @@ func (d *Driver) SendNotification(message string) string {
 	return message
 }
 
-// PendingMessages returns messages to be sent as notifications to pebble
+// PendingMessage returns messages to be sent as notifications to pebble
 // (Not intended to be used directly)
 func (d *Driver) PendingMessage() string {
 	if len(d.Messages) < 1 {

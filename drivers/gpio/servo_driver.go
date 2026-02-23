@@ -25,24 +25,24 @@ type ServoDriver struct {
 //	"Min" - See ServoDriver.ToMin
 //	"Center" - See ServoDriver.ToCenter
 //	"Max" - See ServoDriver.ToMax
-func NewServoDriver(a ServoWriter, pin string, opts ...interface{}) *ServoDriver {
+func NewServoDriver(a ServoWriter, pin string, opts ...any) *ServoDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &ServoDriver{
 		driver: newDriver(a.(gobot.Connection), "Servo", append(opts, withPin(pin))...),
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Move", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Move", func(params map[string]any) any {
 		angle := byte(params["angle"].(float64))
 		return d.Move(angle)
 	})
-	d.AddCommand("ToMin", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ToMin", func(_ map[string]any) any {
 		return d.ToMin()
 	})
-	d.AddCommand("ToCenter", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ToCenter", func(_ map[string]any) any {
 		return d.ToCenter()
 	})
-	d.AddCommand("ToMax", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ToMax", func(_ map[string]any) any {
 		return d.ToMax()
 	})
 
@@ -58,17 +58,17 @@ func (d *ServoDriver) Move(angle uint8) error {
 	return d.servoWrite(d.driverCfg.pin, angle)
 }
 
-// Min sets the servo to it's minimum position
+// ToMin sets the servo to it's minimum position
 func (d *ServoDriver) ToMin() error {
 	return d.Move(0)
 }
 
-// Center sets the servo to it's center position
+// ToCenter sets the servo to it's center position
 func (d *ServoDriver) ToCenter() error {
 	return d.Move(90)
 }
 
-// Max sets the servo to its maximum position
+// ToMax sets the servo to its maximum position
 func (d *ServoDriver) ToMax() error {
 	return d.Move(180)
 }

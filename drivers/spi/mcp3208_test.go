@@ -29,7 +29,7 @@ func initTestMCP3208DriverWithStubbedAdaptor() (*MCP3208Driver, *spiTestAdaptor)
 }
 
 func TestNewMCP3208Driver(t *testing.T) {
-	var di interface{} = NewMCP3208Driver(newSpiTestAdaptor())
+	var di any = NewMCP3208Driver(newSpiTestAdaptor())
 	d, ok := di.(*MCP3208Driver)
 	if !ok {
 		require.Fail(t, "NewMCP3208Driver() should have returned a *MCP3208Driver")

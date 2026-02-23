@@ -37,7 +37,7 @@ func Test_handleResponse(t *testing.T) {
 	tests := map[string]struct {
 		msg       []byte
 		wantEvent string
-		wantData  (interface{})
+		wantData  (any)
 		err       error
 	}{
 		"[empty message]": {

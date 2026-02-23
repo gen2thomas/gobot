@@ -34,7 +34,7 @@ const (
 type GrovePiDriver struct {
 	*Driver
 
-	pins map[int]string
+	pins map[uint8]string
 }
 
 // NewGrovePiDriver creates a new driver with specified i2c interface
@@ -49,7 +49,7 @@ type GrovePiDriver struct {
 func NewGrovePiDriver(c Connector, options ...func(Config)) *GrovePiDriver {
 	d := &GrovePiDriver{
 		Driver: NewDriver(c, "GrovePi", grovePiDefaultAddress),
-		pins:   make(map[int]string),
+		pins:   make(map[uint8]string),
 	}
 
 	for _, option := range options {
@@ -248,6 +248,10 @@ func (d *GrovePiDriver) AnalogWrite(pin string, val int) error {
 		return err
 	}
 
+	if val < 0 || val > 255 {
+		return fmt.Errorf("the value %d is out of byte range 0..255", val)
+	}
+
 	buf := []byte{commandWriteAnalog, byte(pinNum), byte(val), 0}
 	if _, err := d.write(buf); err != nil {
 		return err
@@ -267,17 +271,35 @@ func (d *GrovePiDriver) SetPinMode(pin byte, mode string) error {
 	return d.setPinMode(pin, mode)
 }
 
-func getPin(pin string) string {
-	if len(pin) > 1 {
-		if strings.ToUpper(pin[0:1]) == "A" || strings.ToUpper(pin[0:1]) == "D" {
-			return pin[1:]
-		}
+func (d *GrovePiDriver) preparePin(pin string, mode string) (uint8, error) {
+	pin = getPin(pin)
+	pinNum, err := strconv.Atoi(pin)
+	if err != nil {
+		return 0, err
 	}
 
-	return pin
+	if pinNum < 0 || pinNum > 255 {
+		return 0, fmt.Errorf("pin number (%d) in pin '%s' is out of range 0..255", pinNum, pin)
+	}
+
+	if err := d.ensurePinMode(uint8(pinNum), mode); err != nil {
+		return 0, err
+	}
+
+	return uint8(pinNum), nil
 }
 
-func (d *GrovePiDriver) setPinMode(pin byte, mode string) error {
+func (d *GrovePiDriver) ensurePinMode(pinNum uint8, mode string) error {
+	if dir, ok := d.pins[pinNum]; !ok || dir != mode {
+		if err := d.setPinMode(pinNum, mode); err != nil {
+			return err
+		}
+		d.pins[pinNum] = mode
+	}
+	return nil
+}
+
+func (d *GrovePiDriver) setPinMode(pin uint8, mode string) error {
 	var b []byte
 	if mode == "output" {
 		b = []byte{commandSetPinMode, pin, 1, 0}
@@ -292,30 +314,6 @@ func (d *GrovePiDriver) setPinMode(pin byte, mode string) error {
 
 	_, err := d.readByte()
 	return err
-}
-
-func (d *GrovePiDriver) ensurePinMode(pinNum int, mode string) error {
-	if dir, ok := d.pins[pinNum]; !ok || dir != mode {
-		if err := d.setPinMode(byte(pinNum), mode); err != nil {
-			return err
-		}
-		d.pins[pinNum] = mode
-	}
-	return nil
-}
-
-func (d *GrovePiDriver) preparePin(pin string, mode string) (int, error) {
-	pin = getPin(pin)
-	pinNum, err := strconv.Atoi(pin)
-	if err != nil {
-		return -1, err
-	}
-
-	if err := d.ensurePinMode(pinNum, mode); err != nil {
-		return -1, err
-	}
-
-	return pinNum, nil
 }
 
 func (d *GrovePiDriver) readForCommand(command byte, data []byte) error {
@@ -336,4 +334,14 @@ func float32Of4BytesLittleEndian(bytes []byte) float32 {
 	bits := binary.LittleEndian.Uint32(bytes)
 	float := math.Float32frombits(bits)
 	return float
+}
+
+func getPin(pin string) string {
+	if len(pin) > 1 {
+		if strings.ToUpper(pin[0:1]) == "A" || strings.ToUpper(pin[0:1]) == "D" {
+			return pin[1:]
+		}
+	}
+
+	return pin
 }

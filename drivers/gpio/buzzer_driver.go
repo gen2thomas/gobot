@@ -141,7 +141,7 @@ type BuzzerDriver struct {
 // Supported options:
 //
 //	"WithName"
-func NewBuzzerDriver(a DigitalWriter, pin string, opts ...interface{}) *BuzzerDriver {
+func NewBuzzerDriver(a DigitalWriter, pin string, opts ...any) *BuzzerDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &BuzzerDriver{
 		driver: newDriver(a.(gobot.Connection), "Buzzer", withPin(pin)),

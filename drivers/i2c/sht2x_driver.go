@@ -61,7 +61,7 @@ const (
 	// SHT2xReadUserReg is the command for reading user register
 	SHT2xReadUserReg = 0xe7
 
-	// SHT2xReadUserReg is the command for reading user register
+	// SHT2xSoftReset is the command for a software reset
 	SHT2xSoftReset = 0xfe
 )
 

@@ -72,7 +72,7 @@ func initTestAdaptorWithServo() *Adaptor {
 // TESTS
 
 func TestAdaptor(t *testing.T) {
-	var a interface{} = initTestAdaptor()
+	var a any = initTestAdaptor()
 	_, ok := a.(gobot.Adaptor)
 	if !ok {
 		require.Fail(t, "Adaptor{} should be a gobot.Adaptor")
@@ -81,7 +81,7 @@ func TestAdaptor(t *testing.T) {
 
 func TestNewAdaptor(t *testing.T) {
 	// does it return a pointer to an instance of Adaptor?
-	var a interface{} = initTestAdaptor()
+	var a any = initTestAdaptor()
 	core, ok := a.(*Adaptor)
 	if !ok {
 		require.Fail(t, "NewAdaptor() should have returned a *Adaptor")

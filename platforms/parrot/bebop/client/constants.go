@@ -1,5 +1,6 @@
 package client
 
+//nolint:godoclint // ok here
 const (
 	// libARNetworkAL/Includes/libARNetworkAL/ARNETWORKAL_Manager.h
 	ARNETWORKAL_MANAGER_DEFAULT_ID_MAX uint16 = 256

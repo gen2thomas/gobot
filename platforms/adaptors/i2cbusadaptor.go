@@ -128,6 +128,6 @@ func (a *I2cBusAdaptor) DefaultI2cBus() int {
 	return a.defaultBusNumber
 }
 
-func (a *I2cBusAdaptor) debuglnf(format string, p ...interface{}) {
+func (a *I2cBusAdaptor) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(a.i2cBusCfg.debug, format, p...)
 }

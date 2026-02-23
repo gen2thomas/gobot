@@ -302,10 +302,10 @@ func TestPCA9685Commands(t *testing.T) {
 	// arrange
 	d, _ := initTestPCA9685WithStubbedAdaptor()
 	// act & assert
-	assert.Nil(t, d.Command("PwmWrite")(map[string]interface{}{"pin": "1", "val": "1"}))
-	assert.Nil(t, d.Command("ServoWrite")(map[string]interface{}{"pin": "1", "val": "1"}))
-	assert.Nil(t, d.Command("SetPWM")(map[string]interface{}{"channel": "1", "on": "0", "off": "1024"}))
-	assert.Nil(t, d.Command("SetPWMFreq")(map[string]interface{}{"freq": "60"}))
+	assert.Nil(t, d.Command("PwmWrite")(map[string]any{"pin": "1", "val": "1"}))
+	assert.Nil(t, d.Command("ServoWrite")(map[string]any{"pin": "1", "val": "1"}))
+	assert.Nil(t, d.Command("SetPWM")(map[string]any{"channel": "1", "on": "0", "off": "1024"}))
+	assert.Nil(t, d.Command("SetPWMFreq")(map[string]any{"freq": "60"}))
 }
 
 func TestPCA9685_initialize(t *testing.T) {

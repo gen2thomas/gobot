@@ -20,7 +20,7 @@ func initTestAdafruit1109WithStubbedAdaptor() (*Adafruit1109Driver, *i2cTestAdap
 }
 
 func TestNewAdafruit1109Driver(t *testing.T) {
-	var di interface{} = NewAdafruit1109Driver(newI2cTestAdaptor())
+	var di any = NewAdafruit1109Driver(newI2cTestAdaptor())
 	d, ok := di.(*Adafruit1109Driver)
 	if !ok {
 		require.Fail(t, "NewAdafruit1109Driver() should have returned a *Adafruit1109Driver")

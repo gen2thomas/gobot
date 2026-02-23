@@ -62,7 +62,7 @@ var fixedPins = map[string]int{
 //	GPIO, see [adaptors.NewDigitalPinsAdaptor]
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	SPI, see [adaptors.NewSpiBusAdaptor]
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser(system.WithDigitalPinSysfsAccess())
 	a := &Adaptor{
 		name: gobot.DefaultName("DragonBoard"),
@@ -98,7 +98,7 @@ func NewAdaptor(opts ...interface{}) *Adaptor {
 	}
 
 	a.pinMap = fixedPins
-	for i := 0; i < 122; i++ {
+	for i := range 122 {
 		pin := fmt.Sprintf("GPIO_%d", i)
 		a.pinMap[pin] = i
 	}

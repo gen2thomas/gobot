@@ -117,7 +117,7 @@ func TestGroveTemperatureSensor_publishesTemperatureInCelsius(t *testing.T) {
 	time.Sleep(15 * time.Millisecond)
 
 	var eventValue float64
-	_ = d.Once(d.Event(Value), func(data interface{}) {
+	_ = d.Once(d.Event(Value), func(data any) {
 		eventValue = data.(float64)
 		sem <- true
 	})

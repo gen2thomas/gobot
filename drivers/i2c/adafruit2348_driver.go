@@ -2,6 +2,7 @@ package i2c
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -77,7 +78,7 @@ type Adafruit2348Driver struct {
 func NewAdafruit2348Driver(c Connector, options ...func(Config)) *Adafruit2348Driver {
 	var dc []adafruit2348DCMotor
 	var st []adafruit2348StepperMotor
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		switch i {
 		case 0:
 			dc = append(dc, adafruit2348DCMotor{pwmPin: 8, in1Pin: 10, in2Pin: 9})
@@ -124,9 +125,15 @@ func NewAdafruit2348Driver(c Connector, options ...func(Config)) *Adafruit2348Dr
 	return d
 }
 
-// SetDCMotorSpeed will set the appropriate pins to run the specified DC motor for the given speed.
+// SetDCMotorSpeed will set the appropriate pins to run the specified DC motor for the given speed. Given values can
+// range from 0..255 and will be multiplied by 16 afterwards to use the range 0-4095 (12 bit) of the underlying driver.
 func (d *Adafruit2348Driver) SetDCMotorSpeed(dcMotor int, speed int32) error {
-	return d.SetPWM(int(d.dcMotors[dcMotor].pwmPin), 0, uint16(speed*16)) //nolint:gosec // TODO: fix later
+	v := speed * 16
+	if v < 0 || v > 4095 {
+		return fmt.Errorf("the speed value %d is out of range 0..255", speed)
+	}
+
+	return d.SetPWM(int(d.dcMotors[dcMotor].pwmPin), 0, uint16(v))
 }
 
 // RunDCMotor will set the appropriate pins to run the specified DC motor for the given direction.
@@ -282,11 +289,11 @@ func (d *Adafruit2348Driver) oneStep(motor int, dir Adafruit2348Direction, style
 	d.stepperMotors[motor].currentStep %= adafruit2348StepperMicrosteps * 4
 
 	// only really used for microstepping, otherwise always on!
-	//nolint:gosec // TODO: fix later
+
 	if err := d.SetPWM(int(d.stepperMotors[motor].pwmPinA), 0, uint16(pwmA*16)); err != nil {
 		return 0, err
 	}
-	//nolint:gosec // TODO: fix later
+
 	if err := d.SetPWM(int(d.stepperMotors[motor].pwmPinB), 0, uint16(pwmB*16)); err != nil {
 		return 0, err
 	}

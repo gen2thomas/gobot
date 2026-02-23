@@ -26,7 +26,7 @@ func initTestCCS811WithStubbedAdaptor() (*CCS811Driver, *i2cTestAdaptor) {
 }
 
 func TestNewCCS811Driver(t *testing.T) {
-	var di interface{} = NewCCS811Driver(newI2cTestAdaptor())
+	var di any = NewCCS811Driver(newI2cTestAdaptor())
 	d, ok := di.(*CCS811Driver)
 	if !ok {
 		require.Fail(t, "NewCCS811Driver() should have returned a *CCS811Driver")

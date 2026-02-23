@@ -93,7 +93,7 @@ func NewStepperDriver(
 	pins [4]string,
 	phase phase,
 	stepsPerRev uint,
-	opts ...interface{},
+	opts ...any,
 ) *StepperDriver {
 	if stepsPerRev <= 0 {
 		panic("steps per revolution needs to be greater than zero")
@@ -118,28 +118,28 @@ func NewStepperDriver(
 	d.beforeHalt = d.shutdown
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("MoveDeg", func(params map[string]interface{}) interface{} {
+	d.AddCommand("MoveDeg", func(params map[string]any) any {
 		degs, _ := strconv.Atoi(params["degs"].(string))
 		return d.MoveDeg(degs)
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Move", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Move", func(params map[string]any) any {
 		steps, _ := strconv.Atoi(params["steps"].(string))
 		return d.Move(steps)
 	})
-	d.AddCommand("Step", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Step", func(_ map[string]any) any {
 		return d.Move(1)
 	})
-	d.AddCommand("Run", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Run", func(_ map[string]any) any {
 		return d.Run()
 	})
-	d.AddCommand("Sleep", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Sleep", func(_ map[string]any) any {
 		return d.Sleep()
 	})
-	d.AddCommand("Stop", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Stop", func(_ map[string]any) any {
 		return d.Stop()
 	})
-	d.AddCommand("Halt", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Halt", func(_ map[string]any) any {
 		return d.Halt()
 	})
 

@@ -20,7 +20,7 @@ func TestRobotConnectionEach(t *testing.T) {
 
 func TestRobotToJSON(t *testing.T) {
 	r := newTestRobot("Robot99")
-	r.AddCommand("test_function", func(params map[string]interface{}) interface{} {
+	r.AddCommand("test_function", func(params map[string]any) any {
 		return nil
 	})
 	json := NewJSONRobot(r)

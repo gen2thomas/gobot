@@ -18,8 +18,10 @@ const (
 	bme280RegCalibDigH2LSB   = 0xE1
 	bme280RegControlHumidity = 0xF2
 	bme280RegHumidityMSB     = 0xFD
+)
 
-	// bits 0, 1, 3 of control humidity register
+// bits 0, 1, 3 of control humidity register
+const (
 	BME280CtrlHumidityNoMeasurement  BME280HumidityOversampling = 0x00 // no measurement (value will be 0x08 0x00 0x00)
 	BME280CtrlHumidityOversampling1  BME280HumidityOversampling = 0x01
 	BME280CtrlHumidityOversampling2  BME280HumidityOversampling = 0x02

@@ -48,13 +48,17 @@ const (
 	EmergencyEvent      = "emergency"
 	RollingEvent        = "rolling"
 	FlatTrimChangeEvent = "flattrimchange"
+)
 
-	// modes for LightControl
+// modes for LightControl
+const (
 	LightFixed      = 0
 	LightBlinked    = 1
 	LightOscillated = 3
+)
 
-	// modes for ClawControl
+// modes for ClawControl
+const (
 	ClawOpen   = 0
 	ClawClosed = 1
 )
@@ -64,8 +68,8 @@ type MinidroneDriver struct {
 	*ble.Driver
 	gobot.Eventer
 
-	stepsfa0a uint16
-	stepsfa0b uint16
+	stepsfa0a byte
+	stepsfa0b byte
 	pcmdMutex sync.Mutex
 	flying    bool
 	Pcmd      Pcmd
@@ -113,7 +117,7 @@ func NewMinidroneDriver(a gobot.BLEConnector, opts ...ble.OptionApplier) *Minidr
 func (d *MinidroneDriver) GenerateAllStates() error {
 	d.stepsfa0b++
 	buf := []byte{
-		0x04, byte(d.stepsfa0b), 0x00, 0x04, 0x01, 0x00, 0x32, 0x30, 0x31, 0x34, 0x2D, 0x31, 0x30, 0x2D, 0x32, 0x38, 0x00,
+		0x04, d.stepsfa0b, 0x00, 0x04, 0x01, 0x00, 0x32, 0x30, 0x31, 0x34, 0x2D, 0x31, 0x30, 0x2D, 0x32, 0x38, 0x00,
 	}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
@@ -121,35 +125,35 @@ func (d *MinidroneDriver) GenerateAllStates() error {
 // TakeOff tells the Minidrone to takeoff
 func (d *MinidroneDriver) TakeOff() error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x00, 0x01, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x00, 0x01, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
 // Land tells the Minidrone to land
 func (d *MinidroneDriver) Land() error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x00, 0x03, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x00, 0x03, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
 // FlatTrim calibrates the Minidrone to use its current position as being level
 func (d *MinidroneDriver) FlatTrim() error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x00, 0x00, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x00, 0x00, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
 // Emergency sets the Minidrone into emergency mode
 func (d *MinidroneDriver) Emergency() error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x00, 0x04, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x00, 0x04, 0x00}
 	return d.Adaptor().WriteCharacteristic(priorityChara, buf)
 }
 
 // TakePicture tells the Minidrone to take a picture
 func (d *MinidroneDriver) TakePicture() error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x06, 0x01, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x06, 0x01, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
@@ -316,7 +320,7 @@ func (d *MinidroneDriver) LeftFlip() error {
 //				Only used in LightFixed mode.
 func (d *MinidroneDriver) LightControl(id uint8, mode uint8, intensity uint8) error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x10, 0x00, id, mode, intensity, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x10, 0x00, id, mode, intensity, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
@@ -327,7 +331,7 @@ func (d *MinidroneDriver) LightControl(id uint8, mode uint8, intensity uint8) er
 //	mode - either ClawOpen or ClawClosed
 func (d *MinidroneDriver) ClawControl(id uint8, mode uint8) error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x10, 0x01, id, mode, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x10, 0x01, id, mode, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
@@ -337,7 +341,7 @@ func (d *MinidroneDriver) ClawControl(id uint8, mode uint8) error {
 //	id - always 0
 func (d *MinidroneDriver) GunControl(id uint8) error {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x10, 0x02, id, 0x00}
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x10, 0x02, id, 0x00}
 	return d.Adaptor().WriteCharacteristic(commandChara, buf)
 }
 
@@ -381,7 +385,8 @@ func (d *MinidroneDriver) shutdown() error {
 
 func (d *MinidroneDriver) generateAnimation(direction int8) *bytes.Buffer {
 	d.stepsfa0b++
-	buf := []byte{0x02, byte(d.stepsfa0b) & 0xff, 0x02, 0x04, 0x00, 0x00, byte(direction), 0x00, 0x00, 0x00}
+	//nolint:gosec // TODO: fix later
+	buf := []byte{0x02, d.stepsfa0b, 0x02, 0x04, 0x00, 0x00, byte(direction), 0x00, 0x00, 0x00}
 	return bytes.NewBuffer(buf)
 }
 

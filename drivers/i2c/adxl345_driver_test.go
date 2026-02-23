@@ -22,7 +22,7 @@ func initTestADXL345WithStubbedAdaptor() (*ADXL345Driver, *i2cTestAdaptor) {
 }
 
 func TestNewADXL345Driver(t *testing.T) {
-	var di interface{} = NewADXL345Driver(newI2cTestAdaptor())
+	var di any = NewADXL345Driver(newI2cTestAdaptor())
 	d, ok := di.(*ADXL345Driver)
 	if !ok {
 		require.Fail(t, "NewADXL345Driver() should have returned a *ADXL345Driver")

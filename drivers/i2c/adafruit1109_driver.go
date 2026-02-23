@@ -317,6 +317,6 @@ func (d *Adafruit1109Driver) adafruit1109InitButton(p adafruit1109PortPin) error
 	return nil
 }
 
-func (d *Adafruit1109Driver) debuglnf(format string, p ...interface{}) {
+func (d *Adafruit1109Driver) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(adafruit1109Debug, format, p...)
 }

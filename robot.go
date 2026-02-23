@@ -69,7 +69,7 @@ func (r *Robots) Len() int {
 }
 
 // Start calls the Start method of each Robot in the collection. We return on first error.
-func (r *Robots) Start(args ...interface{}) error {
+func (r *Robots) Start(args ...any) error {
 	autoRun := true
 	if args[0] != nil {
 		var ok bool
@@ -111,7 +111,7 @@ func (r *Robots) Each(f func(*Robot)) {
 //	[]Connection: Connections which are automatically started and stopped with the robot
 //	[]Device: Devices which are automatically started and stopped with the robot
 //	func(): The work routine the robot will execute once all devices and connections have been initialized and started
-func NewRobot(v ...interface{}) *Robot {
+func NewRobot(v ...any) *Robot {
 	r := &Robot{
 		Name:        fmt.Sprintf("%X", Rand(int(^uint(0)>>1))),
 		connections: &Connections{},
@@ -161,7 +161,7 @@ func NewRobot(v ...interface{}) *Robot {
 
 // Start a Robot's Connections, Devices, and work. We stop initialization of
 // connections and devices on first error.
-func (r *Robot) Start(args ...interface{}) error {
+func (r *Robot) Start(args ...any) error {
 	if len(args) > 0 && args[0] != nil {
 		var ok bool
 		if r.AutoRun, ok = args[0].(bool); !ok {

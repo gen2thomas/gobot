@@ -259,6 +259,6 @@ func (a *DigitalPinsAdaptor) digitalPin(
 	return pin, nil
 }
 
-func (a *DigitalPinsAdaptor) debuglnf(format string, p ...interface{}) {
+func (a *DigitalPinsAdaptor) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(a.digitalPinsCfg.debug, format, p...)
 }

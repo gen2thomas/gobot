@@ -60,7 +60,7 @@ func TestManagerRobot(t *testing.T) {
 
 func TestManagerToJSON(t *testing.T) {
 	g := initTestManager()
-	g.AddCommand("test_function", func(params map[string]interface{}) interface{} {
+	g.AddCommand("test_function", func(params map[string]any) any {
 		return nil
 	})
 	json := NewJSONManager(g)

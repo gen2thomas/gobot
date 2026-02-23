@@ -59,7 +59,7 @@ func TestNewServoDriver_options(t *testing.T) {
 }
 
 func TestServo_Commands(t *testing.T) {
-	var err interface{}
+	var err any
 
 	a := newGpioTestAdaptor()
 	d := NewServoDriver(a, "1")
@@ -77,7 +77,7 @@ func TestServo_Commands(t *testing.T) {
 	err = d.Command("ToMax")(nil)
 	require.EqualError(t, err.(error), "pwm error")
 
-	err = d.Command("Move")(map[string]interface{}{"angle": 100.0})
+	err = d.Command("Move")(map[string]any{"angle": 100.0})
 	require.EqualError(t, err.(error), "pwm error")
 }
 

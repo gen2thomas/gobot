@@ -91,7 +91,7 @@ type driver struct {
 //
 //	"WithName"
 //	"withPin"
-func newDriver(a gobot.Adaptor, name string, opts ...interface{}) *driver {
+func newDriver(a gobot.Adaptor, name string, opts ...any) *driver {
 	d := &driver{
 		driverCfg:  &configuration{name: gobot.DefaultName(name)},
 		connection: a,
@@ -130,6 +130,7 @@ func (d *driver) Name() string {
 }
 
 // SetName sets the name of the gpio device.
+//
 // Deprecated: Please use option [gpio.WithName] instead.
 func (d *driver) SetName(name string) {
 	WithName(name).apply(d.driverCfg)

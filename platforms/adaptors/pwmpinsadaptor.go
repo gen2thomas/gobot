@@ -381,7 +381,7 @@ func (a *PWMPinsAdaptor) validateDutyCycle(id string, dutyNanos, periodNanos flo
 	return nil
 }
 
-func (a *PWMPinsAdaptor) debuglnf(format string, p ...interface{}) {
+func (a *PWMPinsAdaptor) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(a.pwmPinsCfg.debug, format, p...)
 }
 

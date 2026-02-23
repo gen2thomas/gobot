@@ -50,7 +50,7 @@ func TestTemperatureReadData(t *testing.T) {
 	a := testutil.NewBleTestAdaptor()
 	d := NewTemperatureDriver(a)
 	require.NoError(t, d.Start())
-	err := d.On("temperature", func(data interface{}) {
+	err := d.On("temperature", func(data any) {
 		assert.Equal(t, int8(0x22), data)
 		sem <- true
 	})

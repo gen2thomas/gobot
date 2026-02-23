@@ -3,7 +3,7 @@ package microbit
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"strconv"
 
 	"gobot.io/x/gobot/v2"
@@ -55,12 +55,16 @@ func (d *IOPinDriver) initialize() error {
 
 // WritePinData writes the pin data for a single pin
 func (d *IOPinDriver) WritePinData(pin string, data byte) error {
-	i, err := strconv.Atoi(pin)
+	pinNo, err := strconv.Atoi(pin)
 	if err != nil {
 		return err
 	}
 
-	buf := []byte{byte(i), data}
+	if pinNo < 0 || pinNo > 255 {
+		return fmt.Errorf("the given pin number '%s' is out of range 0-255", pin)
+	}
+
+	buf := []byte{byte(pinNo), data}
 	err = d.Adaptor().WriteCharacteristic(pinDataChara, buf)
 	return err
 }
@@ -72,8 +76,8 @@ func (d *IOPinDriver) ReadPinADConfig() (int, error) {
 		return 0, err
 	}
 	var result byte
-	for i := 0; i < 4; i++ {
-		result |= c[i] << uint(i) //nolint:gosec // ok here
+	for i := range 4 {
+		result |= c[i] << uint(i)
 	}
 
 	d.adMask = int(result)
@@ -100,8 +104,8 @@ func (d *IOPinDriver) ReadPinIOConfig() (int, error) {
 	}
 
 	var result byte
-	for i := 0; i < 4; i++ {
-		result |= c[i] << uint(i) //nolint:gosec // ok here
+	for i := range 4 {
+		result |= c[i] << uint(i)
 	}
 
 	d.ioMask = int(result)
@@ -181,37 +185,33 @@ func (d *IOPinDriver) AnalogRead(pin string) (int, error) {
 	return int(pins[p].value), nil
 }
 
-func (d *IOPinDriver) ensureDigital(pin int) error {
-	//nolint:gosec // TODO: fix later
-	if bit.IsSet(d.adMask, uint8(pin)) {
-		return d.WritePinADConfig(bit.Clear(d.adMask, uint8(pin)))
+func (d *IOPinDriver) ensureDigital(pin uint8) error {
+	if bit.IsSet(d.adMask, pin) {
+		return d.WritePinADConfig(bit.Clear(d.adMask, pin))
 	}
 
 	return nil
 }
 
-func (d *IOPinDriver) ensureAnalog(pin int) error {
-	//nolint:gosec // TODO: fix later
-	if !bit.IsSet(d.adMask, uint8(pin)) {
-		return d.WritePinADConfig(bit.Set(d.adMask, uint8(pin)))
+func (d *IOPinDriver) ensureAnalog(pin uint8) error {
+	if !bit.IsSet(d.adMask, pin) {
+		return d.WritePinADConfig(bit.Set(d.adMask, pin))
 	}
 
 	return nil
 }
 
-func (d *IOPinDriver) ensureInput(pin int) error {
-	//nolint:gosec // TODO: fix later
-	if !bit.IsSet(d.ioMask, uint8(pin)) {
-		return d.WritePinIOConfig(bit.Set(d.ioMask, uint8(pin)))
+func (d *IOPinDriver) ensureInput(pin uint8) error {
+	if !bit.IsSet(d.ioMask, pin) {
+		return d.WritePinIOConfig(bit.Set(d.ioMask, pin))
 	}
 
 	return nil
 }
 
-func (d *IOPinDriver) ensureOutput(pin int) error {
-	//nolint:gosec // TODO: fix later
-	if bit.IsSet(d.ioMask, uint8(pin)) {
-		return d.WritePinIOConfig(bit.Clear(d.ioMask, uint8(pin))) //nolint:gosec // TODO: fix later
+func (d *IOPinDriver) ensureOutput(pin uint8) error {
+	if bit.IsSet(d.ioMask, pin) {
+		return d.WritePinIOConfig(bit.Clear(d.ioMask, pin))
 	}
 
 	return nil
@@ -243,15 +243,15 @@ func (d *IOPinDriver) readAllPinData() ([]pinData, error) {
 	return pinsData, nil
 }
 
-func validatedPin(pin string) (int, error) {
+func validatedPin(pin string) (uint8, error) {
 	i, err := strconv.Atoi(pin)
 	if err != nil {
 		return 0, err
 	}
 
 	if i < 0 || i > 2 {
-		return 0, errors.New("invalid pin")
+		return 0, fmt.Errorf("pin number '%s' out of range 0..2", pin)
 	}
 
-	return i, nil
+	return uint8(i), nil
 }

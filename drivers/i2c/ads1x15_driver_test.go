@@ -34,11 +34,11 @@ func initTestADS1x15DriverWithStubbedAdaptor() (*ADS1x15Driver, *i2cTestAdaptor)
 	return d, a
 }
 
-var ads1x15TestChannel = map[string]interface{}{
+var ads1x15TestChannel = map[string]any{
 	"channel": int(2),
 }
 
-var ads1x15TestChannelGainDataRate = map[string]interface{}{
+var ads1x15TestChannelGainDataRate = map[string]any{
 	"channel":  int(1),
 	"gain":     int(2),
 	"dataRate": int(3),
@@ -50,8 +50,8 @@ func TestADS1x15CommandsReadDifferenceWithDefaults(t *testing.T) {
 	// act
 	result := d.Command("ReadDifferenceWithDefaults")(ads1x15TestChannel)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.InDelta(t, -4.096, result.(map[string]interface{})["val"], 0.0)
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.InDelta(t, -4.096, result.(map[string]any)["val"], 0.0)
 }
 
 func TestADS1x15CommandsReadDifference(t *testing.T) {
@@ -60,8 +60,8 @@ func TestADS1x15CommandsReadDifference(t *testing.T) {
 	// act
 	result := d.Command("ReadDifference")(ads1x15TestChannelGainDataRate)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.InDelta(t, -2.048, result.(map[string]interface{})["val"], 0.0)
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.InDelta(t, -2.048, result.(map[string]any)["val"], 0.0)
 }
 
 func TestADS1x15CommandsReadWithDefaults(t *testing.T) {
@@ -70,8 +70,8 @@ func TestADS1x15CommandsReadWithDefaults(t *testing.T) {
 	// act
 	result := d.Command("ReadWithDefaults")(ads1x15TestChannel)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.InDelta(t, -4.096, result.(map[string]interface{})["val"], 0.0)
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.InDelta(t, -4.096, result.(map[string]any)["val"], 0.0)
 }
 
 func TestADS1x15CommandsRead(t *testing.T) {
@@ -80,21 +80,21 @@ func TestADS1x15CommandsRead(t *testing.T) {
 	// act
 	result := d.Command("Read")(ads1x15TestChannelGainDataRate)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.InDelta(t, -2.048, result.(map[string]interface{})["val"], 0.0)
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.InDelta(t, -2.048, result.(map[string]any)["val"], 0.0)
 }
 
 func TestADS1x15CommandsAnalogRead(t *testing.T) {
 	// arrange
 	d, _ := initTestADS1x15DriverWithStubbedAdaptor()
-	ads1x15TestPin := map[string]interface{}{
+	ads1x15TestPin := map[string]any{
 		"pin": string("2"),
 	}
 	// act
 	result := d.Command("AnalogRead")(ads1x15TestPin)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.Equal(t, -32768, result.(map[string]interface{})["val"])
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.Equal(t, -32768, result.(map[string]any)["val"])
 }
 
 func TestADS1x15_ads1x15BestGainForVoltage(t *testing.T) {

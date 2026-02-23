@@ -115,6 +115,6 @@ func (a *OneWireBusAdaptor) GetOneWireConnection(familyCode byte, serialNumber u
 	return con, nil
 }
 
-func (a *OneWireBusAdaptor) debuglnf(format string, p ...interface{}) {
+func (a *OneWireBusAdaptor) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(a.oneWireBusCfg.debug, format, p...)
 }

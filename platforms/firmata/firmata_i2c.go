@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 package firmata
 
@@ -140,8 +139,8 @@ func (c *firmataI2cConnection) WriteWordData(reg uint8, val uint16) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	low := uint8(val & 0xff)         //nolint:gosec // ok here
-	high := uint8((val >> 8) & 0xff) //nolint:gosec // ok here
+	low := uint8(val & 0xff)
+	high := uint8((val >> 8) & 0xff)
 	buf := []byte{reg, low, high}
 	return c.writeAndCheckCount(buf)
 }
@@ -204,7 +203,7 @@ func (c *firmataI2cConnection) readInternal(b []byte) (int, error) {
 		return 0, err
 	}
 
-	if err := c.adaptor.Board.Once(c.adaptor.Board.Event("I2cReply"), func(data interface{}) {
+	if err := c.adaptor.Board.Once(c.adaptor.Board.Event("I2cReply"), func(data any) {
 		ret <- data.(client.I2cReply).Data //nolint:forcetypeassert // ok here
 	}); err != nil {
 		return 0, err

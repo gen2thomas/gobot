@@ -61,7 +61,7 @@ type GroveBuzzerDriver struct {
 //	"WithName"
 //
 // Deprecated: Please use [gpio.NewBuzzerDriver] instead. Development will be discontinued.
-func NewGroveBuzzerDriver(a DigitalWriter, pin string, opts ...interface{}) *GroveBuzzerDriver {
+func NewGroveBuzzerDriver(a DigitalWriter, pin string, opts ...any) *GroveBuzzerDriver {
 	return &GroveBuzzerDriver{
 		BuzzerDriver: NewBuzzerDriver(a, pin, opts...),
 	}
@@ -81,7 +81,7 @@ type GroveButtonDriver struct {
 //	"WithButtonPollInterval"
 //
 // Deprecated: Please use [gpio.NewButtonDriver] instead. Development will be discontinued.
-func NewGroveButtonDriver(a DigitalReader, pin string, opts ...interface{}) *GroveButtonDriver {
+func NewGroveButtonDriver(a DigitalReader, pin string, opts ...any) *GroveButtonDriver {
 	return &GroveButtonDriver{
 		ButtonDriver: NewButtonDriver(a, pin, opts...),
 	}
@@ -102,7 +102,7 @@ type GroveTouchDriver struct {
 //	"WithButtonPollInterval"
 //
 // Deprecated: Please use [gpio.NewButtonDriver] instead. Development will be discontinued.
-func NewGroveTouchDriver(a DigitalReader, pin string, opts ...interface{}) *GroveTouchDriver {
+func NewGroveTouchDriver(a DigitalReader, pin string, opts ...any) *GroveTouchDriver {
 	return &GroveTouchDriver{
 		ButtonDriver: NewButtonDriver(a, pin, opts...),
 	}
@@ -122,7 +122,7 @@ type GroveMagneticSwitchDriver struct {
 //	"WithButtonPollInterval"
 //
 // Deprecated: Please use [gpio.NewButtonDriver] instead. Development will be discontinued.
-func NewGroveMagneticSwitchDriver(a DigitalReader, pin string, opts ...interface{}) *GroveMagneticSwitchDriver {
+func NewGroveMagneticSwitchDriver(a DigitalReader, pin string, opts ...any) *GroveMagneticSwitchDriver {
 	return &GroveMagneticSwitchDriver{
 		ButtonDriver: NewButtonDriver(a, pin, opts...),
 	}

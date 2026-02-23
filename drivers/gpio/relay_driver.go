@@ -39,7 +39,7 @@ type RelayDriver struct {
 //	"Toggle" - See RelayDriver.Toggle
 //	"On" - See RelayDriver.On
 //	"Off" - See RelayDriver.Off
-func NewRelayDriver(a DigitalWriter, pin string, opts ...interface{}) *RelayDriver {
+func NewRelayDriver(a DigitalWriter, pin string, opts ...any) *RelayDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &RelayDriver{
 		driver:   newDriver(a.(gobot.Connection), "Relay", withPin(pin)),
@@ -57,15 +57,15 @@ func NewRelayDriver(a DigitalWriter, pin string, opts ...interface{}) *RelayDriv
 		}
 	}
 
-	d.AddCommand("Toggle", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Toggle", func(_ map[string]any) any {
 		return d.Toggle()
 	})
 
-	d.AddCommand("On", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("On", func(_ map[string]any) any {
 		return d.On()
 	})
 
-	d.AddCommand("Off", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Off", func(_ map[string]any) any {
 		return d.Off()
 	})
 

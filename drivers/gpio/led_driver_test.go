@@ -65,7 +65,7 @@ func TestNewLedDriver_options(t *testing.T) {
 }
 
 func TestLed_Commands(t *testing.T) {
-	var err interface{}
+	var err any
 	a := newGpioTestAdaptor()
 	d := NewLedDriver(a, "1")
 
@@ -85,7 +85,7 @@ func TestLed_Commands(t *testing.T) {
 	err = d.Command("Off")(nil)
 	require.EqualError(t, err.(error), "write error")
 
-	err = d.Command("Brightness")(map[string]interface{}{"level": 100.0})
+	err = d.Command("Brightness")(map[string]any{"level": 100.0})
 	require.EqualError(t, err.(error), "pwm error")
 }
 

@@ -67,6 +67,7 @@ const (
 	START_GROVE_I2C_2
 )
 
+//nolint:godoclint // ok here
 const (
 	// distance (mm) from left wheel to right wheel. This works with the initial GPG3 prototype. Will need to be adjusted.
 	WHEEL_BASE_WIDTH = 117

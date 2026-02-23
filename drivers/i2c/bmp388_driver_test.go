@@ -41,7 +41,7 @@ func initTestBMP388WithStubbedAdaptor() (*BMP388Driver, *i2cTestAdaptor) {
 }
 
 func TestNewBMP388Driver(t *testing.T) {
-	var di interface{} = NewBMP388Driver(newI2cTestAdaptor())
+	var di any = NewBMP388Driver(newI2cTestAdaptor())
 	d, ok := di.(*BMP388Driver)
 	if !ok {
 		require.Fail(t, "NewBMP388Driver() should have returned a *BMP388Driver")

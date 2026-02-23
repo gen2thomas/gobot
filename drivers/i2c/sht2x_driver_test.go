@@ -25,7 +25,7 @@ func initTestSHT2xDriverWithStubbedAdaptor() (*SHT2xDriver, *i2cTestAdaptor) {
 }
 
 func TestNewSHT2xDriver(t *testing.T) {
-	var di interface{} = NewSHT2xDriver(newI2cTestAdaptor())
+	var di any = NewSHT2xDriver(newI2cTestAdaptor())
 	d, ok := di.(*SHT2xDriver)
 	if !ok {
 		require.Fail(t, "NewSHT2xDriver() should have returned a *SHT2xDriver")

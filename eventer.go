@@ -37,7 +37,7 @@ type Eventer interface {
 	DeleteEvent(name string)
 
 	// Publish new events to any subscriber
-	Publish(name string, data interface{})
+	Publish(name string, data any)
 
 	// Subscribe to events
 	Subscribe() (events eventChannel)
@@ -46,10 +46,10 @@ type Eventer interface {
 	Unsubscribe(events eventChannel)
 
 	// Event handler
-	On(name string, f func(s interface{})) error
+	On(name string, f func(s any)) error
 
 	// Event handler, only executes one time
-	Once(name string, f func(s interface{})) error
+	Once(name string, f func(s any)) error
 }
 
 // NewEventer returns a new Eventer.
@@ -97,7 +97,7 @@ func (e *eventer) DeleteEvent(name string) {
 }
 
 // Publish new events to anyone that is subscribed
-func (e *eventer) Publish(name string, data interface{}) {
+func (e *eventer) Publish(name string, data any) {
 	evt := NewEvent(name, data)
 	e.in <- evt
 }
@@ -119,7 +119,7 @@ func (e *eventer) Unsubscribe(events eventChannel) {
 }
 
 // On executes the event handler f when e is Published to.
-func (e *eventer) On(n string, f func(s interface{})) error {
+func (e *eventer) On(n string, f func(s any)) error {
 	out := e.Subscribe()
 	go func() {
 		for {
@@ -134,7 +134,7 @@ func (e *eventer) On(n string, f func(s interface{})) error {
 }
 
 // Once is similar to On except that it only executes f one time.
-func (e *eventer) Once(n string, f func(s interface{})) error {
+func (e *eventer) Once(n string, f func(s any)) error {
 	out := e.Subscribe()
 	go func() {
 	ProcessEvents:

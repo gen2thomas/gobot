@@ -173,13 +173,13 @@ func TestAnalogSensor_WithSensorCyclicRead(t *testing.T) {
 	}
 
 	// arrange: expect raw value to be received
-	_ = d.Once(Data, func(data interface{}) { // we can't use d.Event(Data) here, because not registered yet
+	_ = d.Once(Data, func(data any) { // we can't use d.Event(Data) here, because not registered yet
 		assert.Equal(t, 100, data.(int))
 		semData <- true
 	})
 
 	// arrange: expect scaled value to be received
-	_ = d.Once(Value, func(value interface{}) { // we can't use d.Event(Value) here, because not registered yet
+	_ = d.Once(Value, func(value any) { // we can't use d.Event(Value) here, because not registered yet
 		assert.InDelta(t, 10000.0, value.(float64), 0.0)
 		<-semData // wait for data is finished
 		semDone <- true
@@ -200,7 +200,7 @@ func TestAnalogSensor_WithSensorCyclicRead(t *testing.T) {
 	}
 
 	// arrange: for error to be received
-	_ = d.Once(d.Event(Error), func(err interface{}) {
+	_ = d.Once(d.Event(Error), func(err any) {
 		assert.Equal(t, "analog read error", err.(error).Error())
 		semDone <- true
 	})
@@ -213,11 +213,11 @@ func TestAnalogSensor_WithSensorCyclicRead(t *testing.T) {
 	}
 
 	// arrange: for halt message
-	_ = d.Once(d.Event(Data), func(data interface{}) {
+	_ = d.Once(d.Event(Data), func(data any) {
 		semData <- true
 	})
 
-	_ = d.Once(d.Event(Value), func(value interface{}) {
+	_ = d.Once(d.Event(Value), func(value any) {
 		semDone <- true
 	})
 
@@ -264,13 +264,13 @@ func TestAnalogSensorCommands_WithSensorScaler(t *testing.T) {
 		return readReturn, nil
 	}
 	// act & assert: ReadRaw
-	ret := d.Command("ReadRaw")(nil).(map[string]interface{})
+	ret := d.Command("ReadRaw")(nil).(map[string]any)
 	assert.Equal(t, 100, ret["val"].(int))
 	assert.Nil(t, ret["err"])
 	assert.Equal(t, 100, d.RawValue())
 	assert.InDelta(t, 247.0, d.Value(), 0.0)
 	// act & assert: Read
-	ret = d.Command("Read")(nil).(map[string]interface{})
+	ret = d.Command("Read")(nil).(map[string]any)
 	assert.InDelta(t, 497.0, ret["val"].(float64), 0.0)
 	assert.Nil(t, ret["err"])
 	assert.Equal(t, 200, d.RawValue())

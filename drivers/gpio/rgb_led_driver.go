@@ -29,7 +29,7 @@ type RgbLedDriver struct {
 //	"Toggle" - See RgbLedDriver.Toggle
 //	"On" - See RgbLedDriver.On
 //	"Off" - See RgbLedDriver.Off
-func NewRgbLedDriver(a PwmWriter, redPin string, greenPin string, bluePin string, opts ...interface{}) *RgbLedDriver {
+func NewRgbLedDriver(a PwmWriter, redPin string, greenPin string, bluePin string, opts ...any) *RgbLedDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &RgbLedDriver{
 		driver:   newDriver(a.(gobot.Connection), "RGBLED", opts...),
@@ -39,22 +39,22 @@ func NewRgbLedDriver(a PwmWriter, redPin string, greenPin string, bluePin string
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetRGB", func(params map[string]interface{}) interface{} {
-		r := byte(params["r"].(int))
-		g := byte(params["g"].(int))
-		b := byte(params["b"].(int))
+	d.AddCommand("SetRGB", func(params map[string]any) any {
+		r := gobot.IntToByte(params["r"].(int))
+		g := gobot.IntToByte(params["g"].(int))
+		b := gobot.IntToByte(params["b"].(int))
 		return d.SetRGB(r, g, b)
 	})
 
-	d.AddCommand("Toggle", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Toggle", func(_ map[string]any) any {
 		return d.Toggle()
 	})
 
-	d.AddCommand("On", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("On", func(_ map[string]any) any {
 		return d.On()
 	})
 
-	d.AddCommand("Off", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Off", func(_ map[string]any) any {
 		return d.Off()
 	})
 

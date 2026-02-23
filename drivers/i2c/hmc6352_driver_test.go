@@ -25,7 +25,7 @@ func initTestHMC6352DriverWithStubbedAdaptor() (*HMC6352Driver, *i2cTestAdaptor)
 }
 
 func TestNewHMC6352Driver(t *testing.T) {
-	var di interface{} = NewHMC6352Driver(newI2cTestAdaptor())
+	var di any = NewHMC6352Driver(newI2cTestAdaptor())
 	d, ok := di.(*HMC6352Driver)
 	if !ok {
 		require.Fail(t, "NewHMC6352Driver() should have returned a *HMC6352Driver")

@@ -56,7 +56,7 @@ type DS18B20Driver struct {
 // onewire.WithFahrenheit()
 // onewire.WithResolution(byte)
 // onewire.WithConversionTime(uint16)
-func NewDS18B20Driver(a connector, serialNumber uint64, opts ...interface{}) *DS18B20Driver {
+func NewDS18B20Driver(a connector, serialNumber uint64, opts ...any) *DS18B20Driver {
 	d := &DS18B20Driver{
 		driver: newDriver(a, "DS18B20", 0x28, serialNumber),
 		ds18b20Cfg: &ds18b20Configuration{

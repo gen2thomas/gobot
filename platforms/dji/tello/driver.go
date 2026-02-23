@@ -269,7 +269,7 @@ func (d *Driver) Start() error {
 	go func() {
 		defer d.addDoneChReaderCount(-1)
 
-		err := d.On(d.Event(ConnectedEvent), func(interface{}) {
+		err := d.On(d.Event(ConnectedEvent), func(any) {
 			if err := d.SendDateTime(); err != nil {
 				panic(err)
 			}
@@ -362,7 +362,7 @@ func (d *Driver) TakeOff() error {
 	return err
 }
 
-// Throw & Go support
+// ThrowTakeOff provides throw & go support.
 func (d *Driver) ThrowTakeOff() error {
 	buf, _ := d.createPacket(throwtakeoffCommand, 0x48, 0)
 	d.seq++
@@ -967,7 +967,7 @@ func (d *Driver) SendDateTime() error {
 	if err := binary.Write(buf, binary.LittleEndian, int16(now.Second())); err != nil {
 		return err
 	}
-	//nolint:gosec // TODO: fix later
+
 	if err := binary.Write(buf, binary.LittleEndian, int16(now.UnixNano()/int64(time.Millisecond)&0xff)); err != nil {
 		return err
 	}

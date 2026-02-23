@@ -29,7 +29,7 @@ func initTestMCP3202DriverWithStubbedAdaptor() (*MCP3202Driver, *spiTestAdaptor)
 }
 
 func TestNewMCP3202Driver(t *testing.T) {
-	var di interface{} = NewMCP3202Driver(newSpiTestAdaptor())
+	var di any = NewMCP3202Driver(newSpiTestAdaptor())
 	d, ok := di.(*MCP3202Driver)
 	if !ok {
 		require.Fail(t, "NewMCP3202Driver() should have returned a *MCP3202Driver")

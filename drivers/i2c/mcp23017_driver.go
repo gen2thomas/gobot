@@ -94,20 +94,20 @@ func NewMCP23017Driver(c Connector, options ...func(Config)) *MCP23017Driver {
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteGPIO", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteGPIO", func(params map[string]any) any {
 		pin := params["pin"].(uint8)
 		port := params["port"].(string)
 		val := params["val"].(uint8)
 		err := d.WriteGPIO(pin, port, val)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadGPIO", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadGPIO", func(params map[string]any) any {
 		pin := params["pin"].(uint8)
 		port := params["port"].(string)
 		val, err := d.ReadGPIO(pin, port)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	return d
@@ -299,10 +299,7 @@ func (d *MCP23017Driver) ReadGPIO(pin uint8, portStr string) (uint8, error) {
 	if err != nil {
 		return val, err
 	}
-	val = 1 << pin & val
-	if val > 1 {
-		val = 1
-	}
+	val = min(1<<pin&val, 1)
 	return val, nil
 }
 

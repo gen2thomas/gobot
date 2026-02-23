@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 package firmata
 
@@ -27,7 +26,7 @@ type BLEAdaptor struct {
 
 // NewBLEAdaptor opens and uses a BLE connection to a
 // microcontroller running FirmataBLE
-func NewBLEAdaptor(args ...interface{}) *BLEAdaptor {
+func NewBLEAdaptor(args ...any) *BLEAdaptor {
 	address := args[0].(string) //nolint:forcetypeassert // ok here
 	rid := ReceiveID
 	wid := TransmitID

@@ -44,7 +44,7 @@ func newTestDriver(adaptor *testAdaptor, name string, pin string) *testDriver {
 		Commander:  NewCommander(),
 	}
 
-	t.AddCommand("DriverCommand", func(params map[string]interface{}) interface{} { return nil })
+	t.AddCommand("DriverCommand", func(params map[string]any) any { return nil })
 
 	return t
 }
@@ -85,7 +85,7 @@ func newTestRobot(name string) *Robot {
 		[]Device{driver1, driver2, driver3},
 		work,
 	)
-	r.AddCommand("RobotCommand", func(params map[string]interface{}) interface{} { return nil })
+	r.AddCommand("RobotCommand", func(params map[string]any) any { return nil })
 	r.trap = func(c chan os.Signal) {
 		c <- os.Interrupt
 	}

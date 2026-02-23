@@ -19,7 +19,7 @@ func initTestADS1115DriverWithStubbedAdaptor() (*ADS1x15Driver, *i2cTestAdaptor)
 }
 
 func TestNewADS1115Driver(t *testing.T) {
-	var di interface{} = NewADS1115Driver(newI2cTestAdaptor())
+	var di any = NewADS1115Driver(newI2cTestAdaptor())
 	d, ok := di.(*ADS1x15Driver)
 	if !ok {
 		require.Fail(t, "NewADS1115Driver() should have returned a *ADS1x15Driver")

@@ -1,6 +1,8 @@
 package microbit
 
 import (
+	"fmt"
+
 	"gobot.io/x/gobot/v2"
 	"gobot.io/x/gobot/v2/drivers/ble"
 )
@@ -49,6 +51,10 @@ func (b *LEDDriver) ReadScrollingDelay() (uint16, error) {
 }
 
 func (b *LEDDriver) WriteScrollingDelay(delay uint16) error {
+	if delay > 255 {
+		return fmt.Errorf("given delay %d is bigger than 255", delay)
+	}
+
 	buf := []byte{byte(delay)}
 	return b.Adaptor().WriteCharacteristic(ledScrollingDelayChara, buf)
 }

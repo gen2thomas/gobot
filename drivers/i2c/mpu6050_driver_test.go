@@ -25,7 +25,7 @@ func initTestMPU6050WithStubbedAdaptor() (*MPU6050Driver, *i2cTestAdaptor) {
 }
 
 func TestNewMPU6050Driver(t *testing.T) {
-	var di interface{} = NewMPU6050Driver(newI2cTestAdaptor())
+	var di any = NewMPU6050Driver(newI2cTestAdaptor())
 	d, ok := di.(*MPU6050Driver)
 	if !ok {
 		require.Fail(t, "NewMPU6050Driver() should have returned a *MPU6050Driver")

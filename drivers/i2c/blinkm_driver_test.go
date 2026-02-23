@@ -26,7 +26,7 @@ func initTestBlinkMDriverWithStubbedAdaptor() (*BlinkMDriver, *i2cTestAdaptor) {
 }
 
 func TestNewBlinkMDriver(t *testing.T) {
-	var di interface{} = NewBlinkMDriver(newI2cTestAdaptor())
+	var di any = NewBlinkMDriver(newI2cTestAdaptor())
 	d, ok := di.(*BlinkMDriver)
 	if !ok {
 		require.Fail(t, "NewBlinkMDriver() should have returned a *BlinkMDriver")
@@ -72,7 +72,7 @@ func TestNewBlinkMDriverCommands_Fade(t *testing.T) {
 
 func TestNewBlinkMDriverCommands_FirmwareVersion(t *testing.T) {
 	d, a := initTestBlinkMDriverWithStubbedAdaptor()
-	param := make(map[string]interface{})
+	param := make(map[string]any)
 	// When len(data) is 2
 	a.i2cReadImpl = func(b []byte) (int, error) {
 		copy(b, []byte{99, 1})
@@ -82,7 +82,7 @@ func TestNewBlinkMDriverCommands_FirmwareVersion(t *testing.T) {
 	result := d.Command("FirmwareVersion")(param)
 
 	version, _ := d.FirmwareVersion()
-	assert.Equal(t, version, result.(map[string]interface{})["version"].(string))
+	assert.Equal(t, version, result.(map[string]any)["version"].(string))
 
 	// When len(data) is not 2
 	a.i2cReadImpl = func(b []byte) (int, error) {
@@ -92,17 +92,17 @@ func TestNewBlinkMDriverCommands_FirmwareVersion(t *testing.T) {
 	result = d.Command("FirmwareVersion")(param)
 
 	version, _ = d.FirmwareVersion()
-	assert.Equal(t, version, result.(map[string]interface{})["version"].(string))
+	assert.Equal(t, version, result.(map[string]any)["version"].(string))
 }
 
 func TestNewBlinkMDriverCommands_Color(t *testing.T) {
 	d, _ := initTestBlinkMDriverWithStubbedAdaptor()
-	param := make(map[string]interface{})
+	param := make(map[string]any)
 
 	result := d.Command("Color")(param)
 
 	color, _ := d.Color()
-	assert.Equal(t, color, result.(map[string]interface{})["color"].([]byte))
+	assert.Equal(t, color, result.(map[string]any)["color"].([]byte))
 }
 
 func TestBlinkMFirmwareVersion(t *testing.T) {

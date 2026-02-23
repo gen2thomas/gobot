@@ -31,7 +31,7 @@ type TemperatureSensorDriver struct {
 //
 // Supported options: see [aio.NewAnalogSensorDriver]
 // Adds the following API Commands: see [aio.NewAnalogSensorDriver]
-func NewTemperatureSensorDriver(a AnalogReader, pin string, opts ...interface{}) *TemperatureSensorDriver {
+func NewTemperatureSensorDriver(a AnalogReader, pin string, opts ...any) *TemperatureSensorDriver {
 	d := &TemperatureSensorDriver{AnalogSensorDriver: NewAnalogSensorDriver(a, pin)}
 	d.driverCfg.name = gobot.DefaultName("TemperatureSensor")
 
@@ -86,7 +86,7 @@ func TemperatureSensorNtcScaler(
 		if input < 0 {
 			input = 0
 		}
-		rTherm := temperaturSensorGetResistance(uint(input), vRef, rOhm, reverse) //nolint:gosec // checked before
+		rTherm := temperaturSensorGetResistance(uint(input), vRef, rOhm, reverse)
 		temp := ntc.getTemp(rTherm)
 		return temp
 	})

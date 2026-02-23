@@ -25,7 +25,7 @@ func initTestAPA102DriverWithStubbedAdaptor() *APA102Driver {
 }
 
 func TestNewAPA102Driver(t *testing.T) {
-	var di interface{} = NewAPA102Driver(newSpiTestAdaptor(), 10, 31)
+	var di any = NewAPA102Driver(newSpiTestAdaptor(), 10, 31)
 	d, ok := di.(*APA102Driver)
 	if !ok {
 		require.Fail(t, "NewAPA102Driver() should have returned a *APA102Driver")

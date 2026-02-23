@@ -39,7 +39,7 @@ func initTestTSL2561Driver() (*TSL2561Driver, *i2cTestAdaptor) {
 }
 
 func TestNewTSL2561Driver(t *testing.T) {
-	var di interface{} = NewTSL2561Driver(newI2cTestAdaptor())
+	var di any = NewTSL2561Driver(newI2cTestAdaptor())
 	d, ok := di.(*TSL2561Driver)
 	if !ok {
 		require.Fail(t, "NewTSL2561Driver() should have returned a *TSL2561Driver")

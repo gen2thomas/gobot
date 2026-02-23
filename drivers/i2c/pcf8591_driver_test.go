@@ -25,7 +25,7 @@ func initTestPCF8591DriverWithStubbedAdaptor() (*PCF8591Driver, *i2cTestAdaptor)
 }
 
 func TestNewPCF8591Driver(t *testing.T) {
-	var di interface{} = NewPCF8591Driver(newI2cTestAdaptor())
+	var di any = NewPCF8591Driver(newI2cTestAdaptor())
 	d, ok := di.(*PCF8591Driver)
 	if !ok {
 		require.Fail(t, "NewPCF8591Driver() should have returned a *PCF8591Driver")

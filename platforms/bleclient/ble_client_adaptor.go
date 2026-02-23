@@ -69,7 +69,7 @@ func WithDebug() debugOption {
 	return debugOption(true)
 }
 
-// WithWithDropCharacteristicsOnDisconnect leads to clean all discovered services from last connect command if a
+// WithDropCharacteristicsOnDisconnect leads to clean all discovered services from last connect command if a
 // disconnect command happen. Also all subscriptions will be cleaned. A new discover of services and characteristics is
 // done on next connect and the subscriptions needs to be done again afterwards by the caller.
 func WithDropCharacteristicsOnDisconnect() dropCharacteristicsOnDisconnect {

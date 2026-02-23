@@ -25,7 +25,7 @@ func initTestBMP180WithStubbedAdaptor() (*BMP180Driver, *i2cTestAdaptor) {
 
 func TestNewBMP180Driver(t *testing.T) {
 	// Does it return a pointer to an instance of BMP180Driver?
-	var di interface{} = NewBMP180Driver(newI2cTestAdaptor())
+	var di any = NewBMP180Driver(newI2cTestAdaptor())
 	d, ok := di.(*BMP180Driver)
 	if !ok {
 		require.Fail(t, "NewBMP180Driver() should have returned a *BMP180Driver")

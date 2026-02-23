@@ -43,7 +43,7 @@ type AnalogActuatorDriver struct {
 //
 //	"Write"    - See AnalogActuator.Write
 //	"WriteRaw" - See AnalogActuator.WriteRaw
-func NewAnalogActuatorDriver(a AnalogWriter, pin string, opts ...interface{}) *AnalogActuatorDriver {
+func NewAnalogActuatorDriver(a AnalogWriter, pin string, opts ...any) *AnalogActuatorDriver {
 	d := &AnalogActuatorDriver{
 		driver:      newDriver(a, "AnalogActuator"),
 		pin:         pin,
@@ -62,7 +62,7 @@ func NewAnalogActuatorDriver(a AnalogWriter, pin string, opts ...interface{}) *A
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Write", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Write", func(params map[string]any) any {
 		val, err := strconv.ParseFloat(params["val"].(string), 64)
 		if err != nil {
 			return err
@@ -70,7 +70,7 @@ func NewAnalogActuatorDriver(a AnalogWriter, pin string, opts ...interface{}) *A
 		return d.Write(val)
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteRaw", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteRaw", func(params map[string]any) any {
 		val, _ := strconv.Atoi(params["val"].(string))
 		return d.WriteRaw(val)
 	})
@@ -109,6 +109,7 @@ func (a *AnalogActuatorDriver) Write(val float64) error {
 }
 
 // RawWrite write the given raw value to the actuator
+//
 // Deprecated: Please use [aio.WriteRaw] instead.
 func (a *AnalogActuatorDriver) RawWrite(val int) error {
 	return a.WriteRaw(val)

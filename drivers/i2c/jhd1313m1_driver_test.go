@@ -28,7 +28,7 @@ func initTestJHD1313M1DriverWithStubbedAdaptor() (*JHD1313M1Driver, *i2cTestAdap
 
 func TestNewJHD1313M1Driver(t *testing.T) {
 	// Does it return a pointer to an instance of JHD1313M1Driver?
-	var mpl interface{} = NewJHD1313M1Driver(newI2cTestAdaptor())
+	var mpl any = NewJHD1313M1Driver(newI2cTestAdaptor())
 	_, ok := mpl.(*JHD1313M1Driver)
 	if !ok {
 		require.Fail(t, "NewJHD1313M1Driver() should have returned a *JHD1313M1Driver")
@@ -212,21 +212,21 @@ func TestJHD1313MDriverCommands(t *testing.T) {
 	d, _ := initTestJHD1313M1DriverWithStubbedAdaptor()
 	_ = d.Start()
 
-	err := d.Command("SetRGB")(map[string]interface{}{"r": "1", "g": "1", "b": "1"})
+	err := d.Command("SetRGB")(map[string]any{"r": "1", "g": "1", "b": "1"})
 	assert.Nil(t, err)
 
-	err = d.Command("Clear")(map[string]interface{}{})
+	err = d.Command("Clear")(map[string]any{})
 	assert.Nil(t, err)
 
-	err = d.Command("Home")(map[string]interface{}{})
+	err = d.Command("Home")(map[string]any{})
 	assert.Nil(t, err)
 
-	err = d.Command("Write")(map[string]interface{}{"msg": "Hello"})
+	err = d.Command("Write")(map[string]any{"msg": "Hello"})
 	assert.Nil(t, err)
 
-	err = d.Command("SetPosition")(map[string]interface{}{"pos": "1"})
+	err = d.Command("SetPosition")(map[string]any{"pos": "1"})
 	assert.Nil(t, err)
 
-	err = d.Command("Scroll")(map[string]interface{}{"lr": "true"})
+	err = d.Command("Scroll")(map[string]any{"lr": "true"})
 	assert.Nil(t, err)
 }

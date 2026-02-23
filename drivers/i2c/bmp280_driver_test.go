@@ -22,7 +22,7 @@ func initTestBMP280WithStubbedAdaptor() (*BMP280Driver, *i2cTestAdaptor) {
 }
 
 func TestNewBMP280Driver(t *testing.T) {
-	var di interface{} = NewBMP280Driver(newI2cTestAdaptor())
+	var di any = NewBMP280Driver(newI2cTestAdaptor())
 	d, ok := di.(*BMP280Driver)
 	if !ok {
 		require.Fail(t, "NewBMP280Driver() should have returned a *BMP280Driver")

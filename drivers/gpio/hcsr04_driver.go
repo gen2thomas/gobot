@@ -63,7 +63,7 @@ type HCSR04Driver struct {
 // Supported options:
 //
 //	"WithName"
-func NewHCSR04Driver(a gobot.Adaptor, triggerPinID, echoPinID string, opts ...interface{}) *HCSR04Driver {
+func NewHCSR04Driver(a gobot.Adaptor, triggerPinID, echoPinID string, opts ...any) *HCSR04Driver {
 	d := HCSR04Driver{
 		driver:       newDriver(a, "HCSR04"),
 		hcsr04Cfg:    &hcsr04Configuration{},

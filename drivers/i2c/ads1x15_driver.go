@@ -114,42 +114,42 @@ func newADS1x15Driver(c Connector, name string, drs map[int]uint16, ddr int, opt
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadDifferenceWithDefaults", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadDifferenceWithDefaults", func(params map[string]any) any {
 		channel := params["channel"].(int)
 		val, err := d.ReadDifferenceWithDefaults(channel)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadDifference", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadDifference", func(params map[string]any) any {
 		channel := params["channel"].(int)
 		gain := params["gain"].(int)
 		dataRate := params["dataRate"].(int)
 		val, err := d.ReadDifference(channel, gain, dataRate)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadWithDefaults", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadWithDefaults", func(params map[string]any) any {
 		channel := params["channel"].(int)
 		val, err := d.ReadWithDefaults(channel)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Read", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Read", func(params map[string]any) any {
 		channel := params["channel"].(int)
 		gain := params["gain"].(int)
 		dataRate := params["dataRate"].(int)
 		val, err := d.Read(channel, gain, dataRate)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("AnalogRead", func(params map[string]interface{}) interface{} {
+	d.AddCommand("AnalogRead", func(params map[string]any) any {
 		pin := params["pin"].(string)
 		val, err := d.AnalogRead(pin)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	return d
@@ -398,7 +398,7 @@ func (d *ADS1x15Driver) rawRead(channel int, channelOffset int, gain int, dataRa
 
 	// Specify mux value.
 	mux := channel + channelOffset
-	config |= uint16((mux & 0x07) << ads1x15ConfigMuxOffset) //nolint:gosec // TODO: fix later
+	config |= uint16((mux & 0x07) << ads1x15ConfigMuxOffset)
 
 	// Set the programmable gain amplifier bits.
 	config |= uint16(gain) << ads1x15ConfigPgaOffset //nolint:gosec // TODO: fix later
@@ -444,7 +444,7 @@ func (d *ADS1x15Driver) checkChannel(channel int) error {
 func (d *ADS1x15Driver) waitForConversionFinished(delay time.Duration) error {
 	start := time.Now()
 
-	for i := 0; i < ads1x15WaitMaxCount; i++ {
+	for i := range ads1x15WaitMaxCount {
 		if i == ads1x15WaitMaxCount-1 {
 			// most likely the last try will also not finish, so we stop with an error
 			return fmt.Errorf("the conversion is not finished within %s", time.Since(start))

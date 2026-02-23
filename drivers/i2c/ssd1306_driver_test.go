@@ -32,7 +32,7 @@ func initTestSSD1306DriverWithStubbedAdaptor(
 }
 
 func TestNewSSD1306Driver(t *testing.T) {
-	var di interface{} = NewSSD1306Driver(newI2cTestAdaptor())
+	var di any = NewSSD1306Driver(newI2cTestAdaptor())
 	d, ok := di.(*SSD1306Driver)
 	if !ok {
 		require.Fail(t, "new should have returned a *SSD1306Driver")
@@ -215,29 +215,29 @@ func TestSSD1306Reset(t *testing.T) {
 
 func TestSSD1306CommandsDisplay(t *testing.T) {
 	s, _ := initTestSSD1306DriverWithStubbedAdaptor(128, 64, false)
-	result := s.Command("Display")(map[string]interface{}{})
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	result := s.Command("Display")(map[string]any{})
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestSSD1306CommandsOn(t *testing.T) {
 	s, _ := initTestSSD1306DriverWithStubbedAdaptor(128, 64, false)
 
-	result := s.Command("On")(map[string]interface{}{})
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	result := s.Command("On")(map[string]any{})
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestSSD1306CommandsOff(t *testing.T) {
 	s, _ := initTestSSD1306DriverWithStubbedAdaptor(128, 64, false)
 
-	result := s.Command("Off")(map[string]interface{}{})
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	result := s.Command("Off")(map[string]any{})
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestSSD1306CommandsClear(t *testing.T) {
 	s, _ := initTestSSD1306DriverWithStubbedAdaptor(128, 64, false)
 
-	result := s.Command("Clear")(map[string]interface{}{})
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	result := s.Command("Clear")(map[string]any{})
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestSSD1306CommandsSetContrast(t *testing.T) {
@@ -251,17 +251,17 @@ func TestSSD1306CommandsSetContrast(t *testing.T) {
 		return 0, nil
 	}
 
-	result := s.Command("SetContrast")(map[string]interface{}{
+	result := s.Command("SetContrast")(map[string]any{
 		"contrast": byte(0x10),
 	})
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestSSD1306CommandsSet(t *testing.T) {
 	s, _ := initTestSSD1306DriverWithStubbedAdaptor(128, 64, false)
 
 	assert.Equal(t, byte(0), s.buffer.buffer[0])
-	s.Command("Set")(map[string]interface{}{
+	s.Command("Set")(map[string]any{
 		"x": int(0),
 		"y": int(0),
 		"c": int(1),

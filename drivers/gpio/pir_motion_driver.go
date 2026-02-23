@@ -41,7 +41,7 @@ type PIRMotionDriver struct {
 //
 //	"WithName"
 //	"WithButtonPollInterval"
-func NewPIRMotionDriver(a DigitalReader, pin string, opts ...interface{}) *PIRMotionDriver {
+func NewPIRMotionDriver(a DigitalReader, pin string, opts ...any) *PIRMotionDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &PIRMotionDriver{
 		driver:       newDriver(a.(gobot.Connection), "PIRMotion", withPin(pin)),

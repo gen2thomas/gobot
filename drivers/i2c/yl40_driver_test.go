@@ -257,6 +257,6 @@ func TestYL40DriverHalt(t *testing.T) {
 	require.NoError(t, yl.Halt())
 }
 
-func fEqual(want interface{}, got interface{}) bool {
+func fEqual(want any, got any) bool {
 	return fmt.Sprintf("%v", want) == fmt.Sprintf("%v", got)
 }

@@ -17,7 +17,7 @@ type GroveTemperatureSensorDriver struct {
 //
 // Supported options: see [aio.NewAnalogSensorDriver]
 // Adds the following API Commands: see [aio.NewAnalogSensorDriver]
-func NewGroveTemperatureSensorDriver(a AnalogReader, pin string, opts ...interface{}) *GroveTemperatureSensorDriver {
+func NewGroveTemperatureSensorDriver(a AnalogReader, pin string, opts ...any) *GroveTemperatureSensorDriver {
 	t := NewTemperatureSensorDriver(a, pin, opts...)
 	ntc := TemperatureSensorNtcConf{TC0: 25, R0: 10000.0, B: 3975} // Ohm, R25=10k
 	t.SetNtcScaler(1023, 10000, false, ntc)                        // Ohm, reference value: 1023, series R: 10k

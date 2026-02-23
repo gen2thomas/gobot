@@ -20,8 +20,7 @@ type UDPAdaptor struct {
 
 var _ BaseAdaptor = (*UDPAdaptor)(nil)
 
-// NewAdaptor creates a new Mavlink-over-UDP adaptor with specified
-// port.
+// NewUDPAdaptor creates a new Mavlink-over-UDP adaptor with specified port.
 func NewUDPAdaptor(port string) *UDPAdaptor {
 	return &UDPAdaptor{
 		name: "Mavlink",

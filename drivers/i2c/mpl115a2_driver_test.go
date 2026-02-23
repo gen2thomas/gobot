@@ -21,7 +21,7 @@ func initTestMPL115A2DriverWithStubbedAdaptor() (*MPL115A2Driver, *i2cTestAdapto
 }
 
 func TestNewMPL115A2Driver(t *testing.T) {
-	var di interface{} = NewMPL115A2Driver(newI2cTestAdaptor())
+	var di any = NewMPL115A2Driver(newI2cTestAdaptor())
 	d, ok := di.(*MPL115A2Driver)
 	if !ok {
 		require.Fail(t, "NewMPL115A2Driver() should have returned a *MPL115A2Driver")

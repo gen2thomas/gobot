@@ -16,13 +16,13 @@ import (
 // and tests all implementations, so no further tests needed here for gobot.Driver interface
 var _ gobot.Driver = (*MCP23017Driver)(nil)
 
-var pinValPort = map[string]interface{}{
+var pinValPort = map[string]any{
 	"pin":  uint8(7),
 	"val":  uint8(0),
 	"port": "A",
 }
 
-var pinPort = map[string]interface{}{
+var pinPort = map[string]any{
 	"pin":  uint8(7),
 	"port": "A",
 }
@@ -45,7 +45,7 @@ func initTestMCP23017WithStubbedAdaptor(b uint8) (*MCP23017Driver, *i2cTestAdapt
 }
 
 func TestNewMCP23017Driver(t *testing.T) {
-	var di interface{} = NewMCP23017Driver(newI2cTestAdaptor())
+	var di any = NewMCP23017Driver(newI2cTestAdaptor())
 	d, ok := di.(*MCP23017Driver)
 	if !ok {
 		require.Fail(t, "NewMCP23017Driver() should have returned a *MCP23017Driver")
@@ -115,7 +115,7 @@ func TestMCP23017CommandsWriteGPIO(t *testing.T) {
 	// act
 	result := d.Command("WriteGPIO")(pinValPort)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestMCP23017CommandsReadGPIO(t *testing.T) {
@@ -124,7 +124,7 @@ func TestMCP23017CommandsReadGPIO(t *testing.T) {
 	// act
 	result := d.Command("ReadGPIO")(pinPort)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestMCP23017WriteGPIO(t *testing.T) {

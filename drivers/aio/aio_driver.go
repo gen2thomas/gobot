@@ -48,14 +48,14 @@ type driver struct {
 	gobot.Commander
 
 	driverCfg  *configuration
-	connection interface{}
+	connection any
 	afterStart func() error
 	beforeHalt func() error
 	mutex      *sync.Mutex // e.g. used to prevent data race between cyclic and single shot write/read to values and scaler
 }
 
 // newDriver creates a new basic analog gobot driver.
-func newDriver(a interface{}, name string) *driver {
+func newDriver(a any, name string) *driver {
 	d := driver{
 		driverCfg:  &configuration{name: gobot.DefaultName(name)},
 		connection: a,
@@ -79,6 +79,7 @@ func (d *driver) Name() string {
 }
 
 // SetName sets the name of the driver.
+//
 // Deprecated: Please use option [aio.WithName] instead.
 func (d *driver) SetName(name string) {
 	WithName(name).apply(d.driverCfg)

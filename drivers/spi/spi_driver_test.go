@@ -22,7 +22,7 @@ func initTestDriverWithStubbedAdaptor() (*Driver, *spiTestAdaptor) { //nolint:un
 }
 
 func TestNewDriver(t *testing.T) {
-	var di interface{} = NewDriver(newSpiTestAdaptor(), "SPI_BASIC")
+	var di any = NewDriver(newSpiTestAdaptor(), "SPI_BASIC")
 	d, ok := di.(*Driver)
 	if !ok {
 		require.Fail(t, "NewDriver() should have returned a *Driver")

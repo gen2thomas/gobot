@@ -40,7 +40,7 @@ type Tinkerboard2Adaptor struct {
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	PWM, see [adaptors.NewPWMPinsAdaptor]
 //	SPI, see [adaptors.NewSpiBusAdaptor]
-func NewAdaptor(opts ...interface{}) *Tinkerboard2Adaptor {
+func NewAdaptor(opts ...any) *Tinkerboard2Adaptor {
 	sys := system.NewAccesser()
 	a := Tinkerboard2Adaptor{
 		Adaptor: tinkerboard.NewAdaptor(opts...),

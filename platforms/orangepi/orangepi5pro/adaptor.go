@@ -52,7 +52,7 @@ type Adaptor struct {
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	PWM, see [adaptors.NewPWMPinsAdaptor]
 //	SPI, see [adaptors.NewSpiBusAdaptor]
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser()
 	a := &Adaptor{
 		name:  gobot.DefaultName("Zero"),

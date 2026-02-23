@@ -79,13 +79,11 @@ func (f *MockFile) Read(b []byte) (int, error) {
 		return 0, errRead
 	}
 
-	count := len(b)
-	if len(f.Contents) < count {
+	count := min(len(f.Contents),
 		// note: if length of content is smaller than given b than b will not completely overridden, e.g. if content
 		// is empty, than b is not changed at all. This is fine for this MockFile, but in real world, on different
 		// length, an error will be created.
-		count = len(f.Contents)
-	}
+		len(b))
 	copy(b, []byte(f.Contents)[:count])
 	f.Seq = f.fs.next()
 

@@ -13,6 +13,7 @@ const (
 	forceSetAddress = false // normally address will be written only when changed, this behavior can be overridden
 )
 
+//nolint:godoclint // ok here
 const (
 	// From  /usr/include/linux/i2c-dev.h:
 	// ioctl signals

@@ -41,7 +41,7 @@ func TestDriver(t *testing.T) {
 	assert.Equal(t, "World", d.PendingMessage())
 	assert.Empty(t, d.PendingMessage())
 
-	_ = d.On(d.Event("button"), func(data interface{}) {
+	_ = d.On(d.Event("button"), func(data any) {
 		sem <- true
 	})
 
@@ -53,11 +53,11 @@ func TestDriver(t *testing.T) {
 		require.Fail(t, "Button Event was not published")
 	}
 
-	_ = d.On(d.Event("accel"), func(data interface{}) {
+	_ = d.On(d.Event("accel"), func(data any) {
 		sem <- true
 	})
 
-	d.Command("publish_event")(map[string]interface{}{"name": "accel", "data": "100"})
+	d.Command("publish_event")(map[string]any{"name": "accel", "data": "100"})
 
 	select {
 	case <-sem:
@@ -65,9 +65,9 @@ func TestDriver(t *testing.T) {
 		require.Fail(t, "Accel Event was not published")
 	}
 
-	d.Command("send_notification")(map[string]interface{}{"message": "Hey buddy!"})
+	d.Command("send_notification")(map[string]any{"message": "Hey buddy!"})
 	assert.Equal(t, "Hey buddy!", d.Messages[0])
 
-	message := d.Command("pending_message")(map[string]interface{}{})
+	message := d.Command("pending_message")(map[string]any{})
 	assert.Equal(t, "Hey buddy!", message)
 }

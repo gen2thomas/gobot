@@ -4,10 +4,10 @@ package gobot
 // or Adaptor
 type Event struct {
 	Name string
-	Data interface{}
+	Data any
 }
 
 // NewEvent returns a new Event and its associated data.
-func NewEvent(name string, data interface{}) *Event {
+func NewEvent(name string, data any) *Event {
 	return &Event{Name: name, Data: data}
 }

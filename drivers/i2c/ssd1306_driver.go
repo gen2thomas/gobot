@@ -219,30 +219,30 @@ func NewSSD1306Driver(c Connector, options ...func(Config)) *SSD1306Driver {
 	// set display buffer
 	d.buffer = NewDisplayBuffer(d.displayWidth, d.displayHeight, d.pageSize)
 	// add commands
-	d.AddCommand("Display", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Display", func(_ map[string]any) any {
 		err := d.Display()
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
-	d.AddCommand("On", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("On", func(_ map[string]any) any {
 		err := d.On()
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
-	d.AddCommand("Off", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Off", func(_ map[string]any) any {
 		err := d.Off()
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
-	d.AddCommand("Clear", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Clear", func(_ map[string]any) any {
 		d.Clear()
-		return map[string]interface{}{}
+		return map[string]any{}
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetContrast", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetContrast", func(params map[string]any) any {
 		contrast := params["contrast"].(byte)
 		err := d.SetContrast(contrast)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Set", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Set", func(params map[string]any) any {
 		x := params["x"].(int)
 		y := params["y"].(int)
 		c := params["c"].(int)
@@ -347,7 +347,7 @@ func (d *SSD1306Driver) ShowImage(img image.Image) error {
 	}
 	d.Clear()
 	for y, w, h := 0, img.Bounds().Dx(), img.Bounds().Dy(); y < h; y++ {
-		for x := 0; x < w; x++ {
+		for x := range w {
 			c := img.At(x, y)
 			if r, g, b, _ := c.RGBA(); r > 0 || g > 0 || b > 0 {
 				d.Set(x, y, 1)

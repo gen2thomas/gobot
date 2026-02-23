@@ -142,7 +142,7 @@ func TestAnalogActuatorCommands_WithActuatorScaler(t *testing.T) {
 	d := NewAnalogActuatorDriver(a, pin, WithActuatorScaler(func(input float64) int { return int((input + 3) / 2.5) }))
 	a.written = nil // reset previous writes
 	// act & assert: WriteRaw
-	err := d.Command("WriteRaw")(map[string]interface{}{"val": "100"})
+	err := d.Command("WriteRaw")(map[string]any{"val": "100"})
 	assert.Nil(t, err)
 	assert.Len(t, a.written, 1)
 	assert.Equal(t, pin, a.written[0].pin)
@@ -150,7 +150,7 @@ func TestAnalogActuatorCommands_WithActuatorScaler(t *testing.T) {
 	assert.Equal(t, 100, d.RawValue())
 	assert.InDelta(t, 0.0, d.Value(), 0.0)
 	// act & assert: Write
-	err = d.Command("Write")(map[string]interface{}{"val": "247.0"})
+	err = d.Command("Write")(map[string]any{"val": "247.0"})
 	assert.Nil(t, err)
 	assert.Len(t, a.written, 2)
 	assert.Equal(t, pin, a.written[1].pin)
@@ -159,6 +159,6 @@ func TestAnalogActuatorCommands_WithActuatorScaler(t *testing.T) {
 	assert.InDelta(t, 247.0, d.Value(), 0.0)
 	// arrange & act & assert: Write with error
 	a.simulateWriteError = true
-	err = d.Command("Write")(map[string]interface{}{"val": "247.0"})
+	err = d.Command("Write")(map[string]any{"val": "247.0"})
 	require.EqualError(t, err.(error), "write error")
 }

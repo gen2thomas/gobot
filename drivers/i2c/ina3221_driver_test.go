@@ -25,7 +25,7 @@ func initTestINA3221DriverWithStubbedAdaptor() (*INA3221Driver, *i2cTestAdaptor)
 }
 
 func TestNewINA3221Driver(t *testing.T) {
-	var di interface{} = NewINA3221Driver(newI2cTestAdaptor())
+	var di any = NewINA3221Driver(newI2cTestAdaptor())
 	d, ok := di.(*INA3221Driver)
 	if !ok {
 		t.Error("NewINA3221Driver() should return a *INA3221Driver")

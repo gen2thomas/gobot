@@ -55,7 +55,7 @@ type MotorDriver struct {
 //	"WithMotorDirectionPin"
 //	"WithMotorForwardPin"
 //	"WithMotorBackwardPin"
-func NewMotorDriver(a DigitalWriter, speedPin string, opts ...interface{}) *MotorDriver {
+func NewMotorDriver(a DigitalWriter, speedPin string, opts ...any) *MotorDriver {
 	//nolint:forcetypeassert // no error return value, so there is no better way
 	d := &MotorDriver{
 		driver:           newDriver(a.(gobot.Connection), "Motor", withPin(speedPin)),
@@ -172,7 +172,7 @@ func (d *MotorDriver) Backward(speed byte) error {
 	return nil
 }
 
-// Direction sets the direction pin to the specified direction.
+// SetDirection sets the direction pin to the specified direction.
 func (d *MotorDriver) SetDirection(direction string) error {
 	d.currentDirection = direction
 	if d.motorCfg.directionPin != "" {

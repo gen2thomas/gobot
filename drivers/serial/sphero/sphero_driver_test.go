@@ -45,45 +45,45 @@ func TestNewSpheroDriverWithName(t *testing.T) {
 
 func TestSpheroCommands(t *testing.T) {
 	d := initTestSpheroDriver()
-	var ret interface{}
+	var ret any
 
 	ret = d.Command("SetRGB")(
-		map[string]interface{}{"r": 100.0, "g": 100.0, "b": 100.0},
+		map[string]any{"r": 100.0, "g": 100.0, "b": 100.0},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("Roll")(
-		map[string]interface{}{"speed": 100.0, "heading": 100.0},
+		map[string]any{"speed": 100.0, "heading": 100.0},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("SetBackLED")(
-		map[string]interface{}{"level": 100.0},
+		map[string]any{"level": 100.0},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("ConfigureLocator")(
-		map[string]interface{}{"Flags": 1.0, "X": 100.0, "Y": 100.0, "YawTare": 100.0},
+		map[string]any{"Flags": 1.0, "X": 100.0, "Y": 100.0, "YawTare": 100.0},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("SetHeading")(
-		map[string]interface{}{"heading": 100.0},
+		map[string]any{"heading": 100.0},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("SetRotationRate")(
-		map[string]interface{}{"level": 100.0},
+		map[string]any{"level": 100.0},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("SetStabilization")(
-		map[string]interface{}{"enable": true},
+		map[string]any{"enable": true},
 	)
 	assert.Nil(t, ret)
 
 	ret = d.Command("SetStabilization")(
-		map[string]interface{}{"enable": false},
+		map[string]any{"enable": false},
 	)
 	assert.Nil(t, ret)
 
@@ -122,7 +122,7 @@ func TestSpheroSetDataStreaming(t *testing.T) {
 	assert.Equal(t, buf.Bytes(), data.body)
 
 	ret := d.Command("SetDataStreaming")(
-		map[string]interface{}{
+		map[string]any{
 			"N":     100.0,
 			"M":     200.0,
 			"Mask":  300.0,
@@ -151,7 +151,7 @@ func TestSpheroConfigureLocator(t *testing.T) {
 	assert.Equal(t, buf.Bytes(), data.body)
 
 	ret := d.Command("ConfigureLocator")(
-		map[string]interface{}{
+		map[string]any{
 			"Flags":   1.0,
 			"X":       100.0,
 			"Y":       100.0,

@@ -180,6 +180,6 @@ func (a *SpiBusAdaptor) SpiDefaultMaxSpeed() int64 {
 	return a.defaultMaxSpeed
 }
 
-func (a *SpiBusAdaptor) debuglnf(format string, p ...interface{}) {
+func (a *SpiBusAdaptor) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(a.spiBusCfg.debug, format, p...)
 }

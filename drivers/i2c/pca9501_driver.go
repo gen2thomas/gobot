@@ -41,33 +41,33 @@ func NewPCA9501Driver(a Connector, options ...func(Config)) *PCA9501Driver {
 
 	// API commands
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteGPIO", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteGPIO", func(params map[string]any) any {
 		pin := params["pin"].(uint8)
 		val := params["val"].(uint8)
 		err := d.WriteGPIO(pin, val)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadGPIO", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadGPIO", func(params map[string]any) any {
 		pin := params["pin"].(uint8)
 		val, err := d.ReadGPIO(pin)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteEEPROM", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteEEPROM", func(params map[string]any) any {
 		address := params["address"].(uint8)
 		val := params["val"].(uint8)
 		err := d.WriteEEPROM(address, val)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadEEPROM", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadEEPROM", func(params map[string]any) any {
 		address := params["address"].(uint8)
 		val, err := d.ReadEEPROM(address)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 
 	return d
@@ -132,10 +132,7 @@ func (d *PCA9501Driver) ReadGPIO(pin uint8) (uint8, error) {
 	if err != nil {
 		return val, err
 	}
-	val = 1 << pin & val
-	if val > 1 {
-		val = 1
-	}
+	val = min(1<<pin&val, 1)
 	return val, nil
 }
 

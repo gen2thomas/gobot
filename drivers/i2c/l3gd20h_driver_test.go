@@ -30,7 +30,7 @@ func initL3GD20HWithStubbedAdaptor() (*L3GD20HDriver, *i2cTestAdaptor) {
 }
 
 func TestNewL3GD20HDriver(t *testing.T) {
-	var di interface{} = NewL3GD20HDriver(newI2cTestAdaptor())
+	var di any = NewL3GD20HDriver(newI2cTestAdaptor())
 	d, ok := di.(*L3GD20HDriver)
 	if !ok {
 		require.Fail(t, "NewL3GD20HDriver() should have returned a *L3GD20HDriver")

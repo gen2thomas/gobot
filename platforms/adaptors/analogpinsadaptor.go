@@ -131,6 +131,6 @@ func (a *AnalogPinsAdaptor) analogPin(id string) (gobot.AnalogPinner, error) {
 	return pin, nil
 }
 
-func (a *AnalogPinsAdaptor) debuglnf(format string, p ...interface{}) {
+func (a *AnalogPinsAdaptor) debuglnf(format string, p ...any) {
 	gobot.Debuglnf(a.analogPinsCfg.debug, format, p...)
 }

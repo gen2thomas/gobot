@@ -34,7 +34,7 @@ func initTestDRV2605LDriverWithStubbedAdaptor() (*DRV2605LDriver, *i2cTestAdapto
 }
 
 func TestNewDRV2605LDriver(t *testing.T) {
-	var di interface{} = NewDRV2605LDriver(newI2cTestAdaptor())
+	var di any = NewDRV2605LDriver(newI2cTestAdaptor())
 	d, ok := di.(*DRV2605LDriver)
 	if !ok {
 		require.Fail(t, "NewDRV2605LDriver() should have returned a *DRV2605LDriver")

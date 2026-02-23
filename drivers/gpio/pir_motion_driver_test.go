@@ -92,7 +92,7 @@ func TestPIRMotionStart(t *testing.T) {
 	// act: start cyclic reading
 	err := d.Start()
 
-	_ = d.Once(MotionDetected, func(data interface{}) {
+	_ = d.Once(MotionDetected, func(data any) {
 		assert.True(t, d.active)
 		nextVal <- 0
 		sem <- true
@@ -107,7 +107,7 @@ func TestPIRMotionStart(t *testing.T) {
 		require.Fail(t, "PIRMotionDriver Event \"MotionDetected\" was not published")
 	}
 
-	_ = d.Once(MotionStopped, func(data interface{}) {
+	_ = d.Once(MotionStopped, func(data any) {
 		assert.False(t, d.active)
 		nextVal <- -1
 		sem <- true
@@ -119,7 +119,7 @@ func TestPIRMotionStart(t *testing.T) {
 		require.Fail(t, "PIRMotionDriver Event \"MotionStopped\" was not published")
 	}
 
-	_ = d.Once(Error, func(data interface{}) {
+	_ = d.Once(Error, func(data any) {
 		sem <- true
 	})
 
@@ -129,7 +129,7 @@ func TestPIRMotionStart(t *testing.T) {
 		require.Fail(t, "PIRMotionDriver Event \"Error\" was not published")
 	}
 
-	_ = d.Once(MotionDetected, func(data interface{}) {
+	_ = d.Once(MotionDetected, func(data any) {
 		sem <- true
 	})
 

@@ -55,7 +55,7 @@ type Adaptor struct {
 //
 // note from RK3288 datasheet: "The pull direction (pullup or pulldown) for all of GPIOs are software-programmable", but
 // the latter is not working for any pin (armbian 22.08.7)
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser()
 	a := &Adaptor{
 		name:  gobot.DefaultName("Tinker Board"),

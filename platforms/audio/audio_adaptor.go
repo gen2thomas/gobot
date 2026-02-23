@@ -1,4 +1,3 @@
-// Package audio is based on aplay audio adaptor written by @colemanserious (https://github.com/colemanserious)
 package audio
 
 import (
@@ -12,6 +11,7 @@ import (
 )
 
 // Adaptor is gobot Adaptor connection to audio playback
+// Based on aplay audio adaptor written by @colemanserious (https://github.com/colemanserious)
 type Adaptor struct {
 	name string
 }

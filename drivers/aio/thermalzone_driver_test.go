@@ -75,7 +75,7 @@ func TestThermalZoneWithSensorCyclicRead_PublishesTemperatureInFahrenheit(t *tes
 	// act: start cyclic reading
 	require.NoError(t, d.Start())
 	// assert
-	_ = d.Once(d.Event(Value), func(data interface{}) {
+	_ = d.Once(d.Event(Value), func(data any) {
 		//nolint:forcetypeassert // ok here
 		assert.InDelta(t, -148.0, data.(float64), 0.0)
 		sem <- true

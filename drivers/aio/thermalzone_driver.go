@@ -35,7 +35,7 @@ type ThermalZoneDriver struct {
 //	"WithFahrenheit()"
 //
 // Adds the following API Commands: see [aio.NewAnalogSensorDriver]
-func NewThermalZoneDriver(a AnalogReader, zoneID string, opts ...interface{}) *ThermalZoneDriver {
+func NewThermalZoneDriver(a AnalogReader, zoneID string, opts ...any) *ThermalZoneDriver {
 	degreeScaler := func(input int) float64 { return float64(input) / 1000 }
 	d := ThermalZoneDriver{
 		AnalogSensorDriver: NewAnalogSensorDriver(a, zoneID, WithSensorScaler(degreeScaler)),

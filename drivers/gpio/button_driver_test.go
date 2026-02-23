@@ -102,7 +102,7 @@ func TestButtonStart(t *testing.T) {
 	// act: start cyclic reading
 	err := d.Start()
 
-	_ = d.Once(ButtonPush, func(data interface{}) {
+	_ = d.Once(ButtonPush, func(data any) {
 		assert.True(t, d.Active())
 		nextVal <- 0
 		sem <- true
@@ -117,7 +117,7 @@ func TestButtonStart(t *testing.T) {
 		assert.Fail(t, "Button Event \"Push\" was not published")
 	}
 
-	_ = d.Once(ButtonRelease, func(data interface{}) {
+	_ = d.Once(ButtonRelease, func(data any) {
 		assert.False(t, d.Active())
 		nextVal <- -1
 		sem <- true
@@ -129,7 +129,7 @@ func TestButtonStart(t *testing.T) {
 		assert.Fail(t, "Button Event \"Release\" was not published")
 	}
 
-	_ = d.Once(Error, func(data interface{}) {
+	_ = d.Once(Error, func(data any) {
 		sem <- true
 	})
 
@@ -139,7 +139,7 @@ func TestButtonStart(t *testing.T) {
 		assert.Fail(t, "Button Event \"Error\" was not published")
 	}
 
-	_ = d.Once(ButtonPush, func(data interface{}) {
+	_ = d.Once(ButtonPush, func(data any) {
 		sem <- true
 	})
 
@@ -172,7 +172,7 @@ func TestButtonStart_WithDefaultState(t *testing.T) {
 
 	// act: start cyclic reading
 	require.NoError(t, d.Start())
-	_ = d.Once(ButtonPush, func(data interface{}) {
+	_ = d.Once(ButtonPush, func(data any) {
 		assert.True(t, d.Active())
 		nextVal <- 1
 		sem <- true
@@ -184,7 +184,7 @@ func TestButtonStart_WithDefaultState(t *testing.T) {
 		assert.Fail(t, "Button Event \"Push\" was not published")
 	}
 
-	_ = d.Once(ButtonRelease, func(data interface{}) {
+	_ = d.Once(ButtonRelease, func(data any) {
 		assert.False(t, d.Active())
 
 		sem <- true

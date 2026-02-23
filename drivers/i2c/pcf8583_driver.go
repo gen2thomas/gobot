@@ -83,37 +83,37 @@ func NewPCF8583Driver(c Connector, options ...func(Config)) *PCF8583Driver {
 
 	// API commands
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteTime", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteTime", func(params map[string]any) any {
 		val := params["val"].(time.Time)
 		err := d.WriteTime(val)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
-	d.AddCommand("ReadTime", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ReadTime", func(_ map[string]any) any {
 		val, err := d.ReadTime()
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteCounter", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteCounter", func(params map[string]any) any {
 		val := params["val"].(int32)
 		err := d.WriteCounter(val)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
-	d.AddCommand("ReadCounter", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ReadCounter", func(_ map[string]any) any {
 		val, err := d.ReadCounter()
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("WriteRAM", func(params map[string]interface{}) interface{} {
+	d.AddCommand("WriteRAM", func(params map[string]any) any {
 		address := params["address"].(uint8)
 		val := params["val"].(uint8)
 		err := d.WriteRAM(address, val)
-		return map[string]interface{}{"err": err}
+		return map[string]any{"err": err}
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ReadRAM", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ReadRAM", func(params map[string]any) any {
 		address := params["address"].(uint8)
 		val, err := d.ReadRAM(address)
-		return map[string]interface{}{"val": val, "err": err}
+		return map[string]any{"val": val, "err": err}
 	})
 	return d
 }

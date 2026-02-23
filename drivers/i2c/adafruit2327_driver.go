@@ -1,6 +1,8 @@
 package i2c
 
 import (
+	"fmt"
+
 	"gobot.io/x/gobot/v2"
 )
 
@@ -41,5 +43,13 @@ func (d *Adafruit2327Driver) SetServoMotorFreq(freq float64) error {
 // SetServoMotorPulse is a convenience function to specify the 'tick' value,
 // between 0-4095, when the signal will turn on, and when it will turn off.
 func (d *Adafruit2327Driver) SetServoMotorPulse(channel byte, on, off int32) error {
-	return d.SetPWM(int(channel), uint16(on), uint16(off)) //nolint:gosec // TODO: fix later
+	if on < 0 || on > 4095 {
+		return fmt.Errorf("the on value %d is out of range 0..4095", on)
+	}
+
+	if off < 0 || off > 4095 {
+		return fmt.Errorf("the off value %d is out of range 0..4095", off)
+	}
+
+	return d.SetPWM(int(channel), uint16(on), uint16(off))
 }

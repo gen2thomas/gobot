@@ -51,7 +51,7 @@ type Adaptor struct {
 //	GPIO, see [adaptors.NewDigitalPinsAdaptor]
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	SPI, see [adaptors.NewSpiBusAdaptor]
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser()
 	a := &Adaptor{
 		name:  gobot.DefaultName("ROCK64"),

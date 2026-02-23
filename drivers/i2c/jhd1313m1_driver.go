@@ -110,30 +110,30 @@ func NewJHD1313M1Driver(a Connector, options ...func(Config)) *JHD1313M1Driver {
 	}
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetRGB", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetRGB", func(params map[string]any) any {
 		r, _ := strconv.Atoi(params["r"].(string))
 		g, _ := strconv.Atoi(params["g"].(string))
 		b, _ := strconv.Atoi(params["b"].(string))
 		return d.SetRGB(r, g, b)
 	})
-	d.AddCommand("Clear", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Clear", func(_ map[string]any) any {
 		return d.Clear()
 	})
-	d.AddCommand("Home", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Home", func(_ map[string]any) any {
 		return d.Home()
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Write", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Write", func(params map[string]any) any {
 		msg := params["msg"].(string)
 		return d.Write(msg)
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetPosition", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetPosition", func(params map[string]any) any {
 		pos, _ := strconv.Atoi(params["pos"].(string))
 		return d.SetPosition(pos)
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Scroll", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Scroll", func(params map[string]any) any {
 		lr, _ := strconv.ParseBool(params["lr"].(string))
 		return d.Scroll(lr)
 	})
@@ -235,13 +235,13 @@ func (d *JHD1313M1Driver) Start() error {
 
 // SetRGB sets the Red Green Blue value of backlit.
 func (d *JHD1313M1Driver) SetRGB(r, g, b int) error {
-	if err := d.setReg(REG_RED, r); err != nil {
+	if err := d.setReg(REG_RED, gobot.IntToByte(r)); err != nil {
 		return err
 	}
-	if err := d.setReg(REG_GREEN, g); err != nil {
+	if err := d.setReg(REG_GREEN, gobot.IntToByte(g)); err != nil {
 		return err
 	}
-	return d.setReg(REG_BLUE, b)
+	return d.setReg(REG_BLUE, gobot.IntToByte(b))
 }
 
 // Clear clears the text on the lCD display.
@@ -261,14 +261,17 @@ func (d *JHD1313M1Driver) Home() error {
 func (d *JHD1313M1Driver) Write(message string) error {
 	// This wait fixes an odd bug where the clear function doesn't always work properly.
 	time.Sleep(1 * time.Millisecond)
-	for _, val := range message {
-		if val == '\n' {
+	// if the message contains real unicode characters (rune is integer and the value will be bigger than 255), we do not
+	// skip, but write the byte part so the length of the text will not be changed
+	for _, rune := range message {
+		if rune == '\n' {
 			if err := d.SetPosition(16); err != nil {
 				return err
 			}
 			continue
 		}
-		if _, err := d.lcdConnection.Write([]byte{LCD_DATA, byte(val)}); err != nil {
+		b := byte(rune & 0xFF)
+		if _, err := d.lcdConnection.Write([]byte{LCD_DATA, b}); err != nil {
 			return err
 		}
 	}
@@ -326,8 +329,8 @@ func (d *JHD1313M1Driver) SetCustomChar(pos int, charMap [8]byte) error {
 	return err
 }
 
-func (d *JHD1313M1Driver) setReg(command int, data int) error {
-	_, err := d.rgbConnection.Write([]byte{byte(command), byte(data)})
+func (d *JHD1313M1Driver) setReg(command, data byte) error {
+	_, err := d.rgbConnection.Write([]byte{command, data})
 	return err
 }
 

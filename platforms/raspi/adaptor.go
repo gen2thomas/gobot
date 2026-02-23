@@ -56,7 +56,7 @@ type Adaptor struct {
 //	I2C, see [adaptors.NewI2cBusAdaptor]
 //	PWM, see [adaptors.NewPWMPinsAdaptor]
 //	SPI, see [adaptors.NewSpiBusAdaptor]
-func NewAdaptor(opts ...interface{}) *Adaptor {
+func NewAdaptor(opts ...any) *Adaptor {
 	sys := system.NewAccesser()
 	a := &Adaptor{
 		name: gobot.DefaultName("RaspberryPi"),
@@ -208,7 +208,7 @@ func (a *Adaptor) readRevision() string {
 		if err != nil {
 			return a.revision
 		}
-		for _, v := range strings.Split(string(content), "\n") {
+		for v := range strings.SplitSeq(string(content), "\n") {
 			if strings.Contains(v, "Revision") {
 				s := strings.Split(v, " ")
 				version, _ := strconv.ParseInt("0x"+s[len(s)-1], 0, 64)

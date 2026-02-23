@@ -51,7 +51,7 @@ func WithName(name string) optionApplier {
 	return nameOption(name)
 }
 
-// WithName is used to replace the default name of the driver.
+// WithBaudRate is used to replace the default baud rate of the driver.
 func WithBaudRate(baudRate int) optionApplier {
 	return baudRateOption(baudRate)
 }
@@ -62,6 +62,7 @@ func (a *Adaptor) Name() string {
 }
 
 // SetName sets the adaptors name
+//
 // Deprecated: Please use option [serialport.WithName] instead.
 func (a *Adaptor) SetName(n string) {
 	WithName(n).apply(a.cfg)

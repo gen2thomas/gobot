@@ -26,7 +26,7 @@ func TestNewDriver(t *testing.T) {
 	// arrange
 	a := newI2cTestAdaptor()
 	// act
-	var di interface{} = NewDriver(a, "I2C_BASIC", 0x15)
+	var di any = NewDriver(a, "I2C_BASIC", 0x15)
 	// assert
 	d, ok := di.(*Driver)
 	if !ok {

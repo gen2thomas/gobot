@@ -180,7 +180,7 @@ func TestGroveDriverWithSensorCyclicReadPublishesError(t *testing.T) {
 		require.NoError(t, driver.Start())
 
 		// expect error
-		_ = driver.Once(driver.Event(Error), func(data interface{}) {
+		_ = driver.Once(driver.Event(Error), func(data any) {
 			assert.Equal(t, "read error", data.(error).Error())
 			close(sem)
 		})
@@ -196,7 +196,7 @@ func TestGroveDriverWithSensorCyclicReadPublishesError(t *testing.T) {
 	}
 }
 
-func groveGetType(driver interface{}) string {
+func groveGetType(driver any) string {
 	d := reflect.TypeOf(driver)
 
 	if d.Kind() == reflect.Ptr {

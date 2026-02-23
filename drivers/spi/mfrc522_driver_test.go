@@ -26,7 +26,7 @@ func initTestMFRC522DriverWithStubbedAdaptor() (*MFRC522Driver, *spiTestAdaptor)
 }
 
 func TestNewMFRC522Driver(t *testing.T) {
-	var di interface{} = NewMFRC522Driver(newSpiTestAdaptor())
+	var di any = NewMFRC522Driver(newSpiTestAdaptor())
 	d, ok := di.(*MFRC522Driver)
 	if !ok {
 		require.Fail(t, "NewMFRC522Driver() should have returned a *MFRC522Driver")

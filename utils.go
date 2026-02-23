@@ -66,3 +66,19 @@ func Rescale(input, fromMin, fromMax, toMin, toMax float64) float64 {
 func DefaultName(name string) string {
 	return fmt.Sprintf("%s-%X", name, Rand(int(^uint(0)>>1)))
 }
+
+// IntToByte limits the given integer value to byte range and returns as byte
+func IntToByte(v int) byte {
+	v = max(v, 0)
+	v = min(v, 0xFF)
+
+	return byte(v) //nolint:gosec // limited before
+}
+
+// IntToUint16 limits the given integer value to uint16 range and returns as byte
+func IntToUint16(v int) uint16 {
+	v = max(v, 0)
+	v = min(v, 0xFFFF)
+
+	return uint16(v) //nolint:gosec // limited before
+}

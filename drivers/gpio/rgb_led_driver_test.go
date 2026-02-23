@@ -72,7 +72,7 @@ func TestNewRgbLedDriver_options(t *testing.T) {
 }
 
 func TestRgbLed_Commands(t *testing.T) {
-	var err interface{}
+	var err any
 
 	a := newGpioTestAdaptor()
 	d := NewRgbLedDriver(a, "1", "2", "3")
@@ -93,7 +93,7 @@ func TestRgbLed_Commands(t *testing.T) {
 	err = d.Command("Off")(nil)
 	require.EqualError(t, err.(error), "pwm error")
 
-	err = d.Command("SetRGB")(map[string]interface{}{"r": 0xff, "g": 0xff, "b": 0xff})
+	err = d.Command("SetRGB")(map[string]any{"r": 0xff, "g": 0xff, "b": 0xff})
 	require.EqualError(t, err.(error), "pwm error")
 }
 

@@ -25,33 +25,43 @@ const (
 	bmp280RegConf         = 0xF5 // rate, IIR-filter and interface options (SPI)
 	bmp280RegPressureData = 0xF7
 	bmp280RegTempData     = 0xFA
+)
 
-	// bits 0, 1 of control register
+// bits 0, 1 of control register
+const (
 	bmp280CtrlPwrSleepMode   = 0x00
 	bmp280CtrlPwrForcedMode  = 0x01
 	bmp280CtrlPwrForcedMode2 = 0x02 // same function as 0x01
 	bmp280CtrlPwrNormalMode  = 0x03
+)
 
-	// bits 2, 3, 4 of control register (will be shifted on write)
+// bits 2, 3, 4 of control register (will be shifted on write)
+const (
 	BMP280CtrlPressNoMeasurement  BMP280PressureOversampling = 0x00 // no measurement (value will be 0x08 0x00 0x00)
 	BMP280CtrlPressOversampling1  BMP280PressureOversampling = 0x01 // resolution 16 bit
 	BMP280CtrlPressOversampling2  BMP280PressureOversampling = 0x02 // resolution 17 bit
 	BMP280CtrlPressOversampling4  BMP280PressureOversampling = 0x03 // resolution 18 bit
 	BMP280CtrlPressOversampling8  BMP280PressureOversampling = 0x04 // resolution 19 bit
 	BMP280CtrlPressOversampling16 BMP280PressureOversampling = 0x05 // resolution 20 bit (same as 0x06, 0x07)
+)
 
-	// bits 5, 6, 7 of control register (will be shifted on write)
+// bits 5, 6, 7 of control register (will be shifted on write)
+const (
 	BMP280CtrlTempNoMeasurement  BMP280TemperatureOversampling = 0x00 // no measurement (value will be 0x08 0x00 0x00)
 	BMP280CtrlTempOversampling1  BMP280TemperatureOversampling = 0x01 // resolution 16 bit
 	BMP280CtrlTempOversampling2  BMP280TemperatureOversampling = 0x02 // resolution 17 bit
 	BMP280CtrlTempOversampling4  BMP280TemperatureOversampling = 0x03 // resolution 18 bit
 	BMP280CtrlTempOversampling8  BMP280TemperatureOversampling = 0x04 // resolution 19 bit
 	BMP280CtrlTempOversampling16 BMP280TemperatureOversampling = 0x05 // resolution 20 bit
+)
 
-	// bit 0 of config register
+// bit 0 of config register
+const (
 	bmp280ConfSPIBit = 0x01 // if set, SPI is used
+)
 
-	// bits 2, 3, 4 of config register (bit 1 is unused, will be shifted on write)
+// bits 2, 3, 4 of config register (bit 1 is unused, will be shifted on write)
+const (
 	bmp280ConfStandBy0005 = 0x00 //	0.5 ms
 	bmp280ConfStandBy0625 = 0x01 //	62.5 ms
 	bmp280ConfStandBy0125 = 0x02 //	125 ms
@@ -60,8 +70,10 @@ const (
 	bmp280ConfStandBy1000 = 0x05 //	1000 ms
 	bmp280ConfStandBy2000 = 0x06 //	2000 ms
 	bmp280ConfStandBy4000 = 0x07 //	4000 ms
+)
 
-	// bits 5, 6, 7 of config register
+// bits 5, 6, 7 of config register
+const (
 	BMP280ConfFilterOff BMP280IIRFilter = 0x00
 	BMP280ConfFilter2   BMP280IIRFilter = 0x01
 	BMP280ConfFilter4   BMP280IIRFilter = 0x02

@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 package firmata
 
@@ -18,7 +17,7 @@ type TCPAdaptor struct {
 
 // NewTCPAdaptor opens and uses a TCP connection to a microcontroller running
 // WiFiFirmata
-func NewTCPAdaptor(args ...interface{}) *TCPAdaptor {
+func NewTCPAdaptor(args ...any) *TCPAdaptor {
 	address := args[0].(string) //nolint:forcetypeassert // ok here
 
 	a := NewAdaptor(address)

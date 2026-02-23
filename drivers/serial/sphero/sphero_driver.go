@@ -68,7 +68,7 @@ func NewSpheroDriver(a spheroSerialAdaptor, opts ...serial.OptionApplier) *Spher
 	d.AddEvent(spherocommon.SensorDataEvent)
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetRGB", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetRGB", func(params map[string]any) any {
 		r := uint8(params["r"].(float64))
 		g := uint8(params["g"].(float64))
 		b := uint8(params["b"].(float64))
@@ -77,52 +77,52 @@ func NewSpheroDriver(a spheroSerialAdaptor, opts ...serial.OptionApplier) *Spher
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("Roll", func(params map[string]interface{}) interface{} {
+	d.AddCommand("Roll", func(params map[string]any) any {
 		speed := uint8(params["speed"].(float64))
 		heading := uint16(params["heading"].(float64))
 		d.Roll(speed, heading)
 		return nil
 	})
 
-	d.AddCommand("Stop", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("Stop", func(_ map[string]any) any {
 		d.Stop()
 		return nil
 	})
 
-	d.AddCommand("GetRGB", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("GetRGB", func(_ map[string]any) any {
 		return d.GetRGB()
 	})
 
-	d.AddCommand("ReadLocator", func(_ map[string]interface{}) interface{} {
+	d.AddCommand("ReadLocator", func(_ map[string]any) any {
 		return d.ReadLocator()
 	})
 
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetBackLED", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetBackLED", func(params map[string]any) any {
 		level := uint8(params["level"].(float64))
 		d.SetBackLED(level)
 		return nil
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetRotationRate", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetRotationRate", func(params map[string]any) any {
 		level := uint8(params["level"].(float64))
 		d.SetRotationRate(level)
 		return nil
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetHeading", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetHeading", func(params map[string]any) any {
 		heading := uint16(params["heading"].(float64))
 		d.SetHeading(heading)
 		return nil
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetStabilization", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetStabilization", func(params map[string]any) any {
 		on := params["enable"].(bool)
 		d.SetStabilization(on)
 		return nil
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("SetDataStreaming", func(params map[string]interface{}) interface{} {
+	d.AddCommand("SetDataStreaming", func(params map[string]any) any {
 		N := uint16(params["N"].(float64))
 		M := uint16(params["M"].(float64))
 		Mask := uint32(params["Mask"].(float64))
@@ -133,7 +133,7 @@ func NewSpheroDriver(a spheroSerialAdaptor, opts ...serial.OptionApplier) *Spher
 		return nil
 	})
 	//nolint:forcetypeassert // ok here
-	d.AddCommand("ConfigureLocator", func(params map[string]interface{}) interface{} {
+	d.AddCommand("ConfigureLocator", func(params map[string]any) any {
 		Flags := uint8(params["Flags"].(float64))
 		X := int16(params["X"].(float64))
 		Y := int16(params["Y"].(float64))
@@ -184,7 +184,6 @@ func (d *SpheroDriver) SetRotationRate(level uint8) {
 
 // SetHeading sets the heading of the Sphero
 func (d *SpheroDriver) SetHeading(heading uint16) {
-	//nolint:gosec // TODO: fix later
 	d.sendCraftPacket([]uint8{uint8(heading >> 8), uint8(heading & 0xFF)}, 0x01)
 }
 
@@ -199,7 +198,6 @@ func (d *SpheroDriver) SetStabilization(on bool) {
 
 // Roll sends a roll command to the Sphero gives a speed and heading
 func (d *SpheroDriver) Roll(speed uint8, heading uint16) {
-	//nolint:gosec // TODO: fix later
 	d.sendCraftPacket([]uint8{speed, uint8(heading >> 8), uint8(heading & 0xFF), 0x01}, 0x30)
 }
 
@@ -233,7 +231,7 @@ func (d *SpheroDriver) ConfigureCollisionDetection(cc spherocommon.CollisionConf
 	d.sendCraftPacket([]uint8{cc.Method, cc.Xt, cc.Yt, cc.Xs, cc.Ys, cc.Dead}, 0x12)
 }
 
-// SetCalibration sets up Sphero for manual heading calibration.
+// StartCalibration sets up Sphero for manual heading calibration.
 // It does this by turning on the tail light (so you can tell where it's
 // facing) and disabling stabilization (so you can adjust the heading).
 //
@@ -376,7 +374,7 @@ func (d *SpheroDriver) handleDataStreaming(data []uint8) {
 
 func (d *SpheroDriver) getSyncResponse(packet *packet) []byte {
 	d.packetChannel <- packet
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		for key := range d.syncResponse {
 			if d.syncResponse[key][3] == packet.header[4] && len(d.syncResponse[key]) > 6 {
 				var response []byte

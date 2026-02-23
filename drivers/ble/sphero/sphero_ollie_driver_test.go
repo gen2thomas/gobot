@@ -86,7 +86,7 @@ func TestDataStreaming(t *testing.T) {
 	require.NoError(t, err)
 
 	responseChan := make(chan bool)
-	err = d.On("sensordata", func(data interface{}) {
+	err = d.On("sensordata", func(data any) {
 		cont := data.(spherocommon.DataStreamingPacket)
 		// fmt.Printf("got streaming packet: %+v \n", cont)
 		assert.Equal(t, int16(10), cont.RawAccX)
@@ -111,7 +111,7 @@ func TestDataStreaming(t *testing.T) {
 			require.NoError(t, err)
 
 			c := uint16(b)
-			bytes = append(bytes, byte(c))
+			bytes = append(bytes, byte(c)) //nolint:gosec // ok for this test
 		}
 		d.handleResponses(bytes)
 	}

@@ -39,6 +39,8 @@ func (d *TemperatureDriver) initialize() error {
 		var l int8
 		buf := bytes.NewBuffer(data)
 		val, _ := buf.ReadByte()
+		// see https://lancaster-university.github.io/microbit-docs/resources/bluetooth/bluetooth_profile.html
+		//nolint:gosec // the data value is a representation of signed integer 8 bit value in degrees celsius
 		l = int8(val)
 
 		d.Publish(d.Event(TemperatureEvent), l)

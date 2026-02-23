@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 package firmata
 
@@ -62,7 +61,7 @@ type Adaptor struct {
 // to a serial port with a baude rate of 57600. If an io.ReadWriteCloser
 // is supplied, then the Adaptor will use the provided io.ReadWriteCloser and use the
 // string port as a label to be displayed in the log and api.
-func NewAdaptor(args ...interface{}) *Adaptor {
+func NewAdaptor(args ...any) *Adaptor {
 	f := &Adaptor{
 		name:  gobot.DefaultName("Firmata"),
 		port:  "",
@@ -99,7 +98,7 @@ func (f *Adaptor) Connect() error {
 		return err
 	}
 
-	return f.Board.On("SysexResponse", func(data interface{}) {
+	return f.Board.On("SysexResponse", func(data any) {
 		f.Publish("SysexResponse", data)
 	})
 }

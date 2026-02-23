@@ -55,7 +55,7 @@ type EasyDriver struct {
 //	"WithEasyDirectionPin"
 //	"WithEasyEnablePin"
 //	"WithEasySleepPin"
-func NewEasyDriver(a DigitalWriter, anglePerStep float32, stepPin string, opts ...interface{}) *EasyDriver {
+func NewEasyDriver(a DigitalWriter, anglePerStep float32, stepPin string, opts ...any) *EasyDriver {
 	if anglePerStep <= 0 {
 		panic("angle per step needs to be greater than zero")
 	}

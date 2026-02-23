@@ -166,7 +166,7 @@ func (b *Client) Connect(conn io.ReadWriteCloser) error {
 	connected := make(chan bool, 1)
 	connectError := make(chan error, 1)
 
-	if err := b.Once(b.Event("ProtocolVersion"), func(data interface{}) {
+	if err := b.Once(b.Event("ProtocolVersion"), func(data any) {
 		e := b.FirmwareQuery()
 		if e != nil {
 			b.setConnecting(false)
@@ -176,7 +176,7 @@ func (b *Client) Connect(conn io.ReadWriteCloser) error {
 		return err
 	}
 
-	if err := b.Once(b.Event("FirmwareQuery"), func(data interface{}) {
+	if err := b.Once(b.Event("FirmwareQuery"), func(data any) {
 		e := b.CapabilitiesQuery()
 		if e != nil {
 			b.setConnecting(false)
@@ -186,7 +186,7 @@ func (b *Client) Connect(conn io.ReadWriteCloser) error {
 		return err
 	}
 
-	if err := b.Once(b.Event("CapabilityQuery"), func(data interface{}) {
+	if err := b.Once(b.Event("CapabilityQuery"), func(data any) {
 		e := b.AnalogMappingQuery()
 		if e != nil {
 			b.setConnecting(false)
@@ -196,7 +196,7 @@ func (b *Client) Connect(conn io.ReadWriteCloser) error {
 		return err
 	}
 
-	if err := b.Once(b.Event("AnalogMappingQuery"), func(data interface{}) {
+	if err := b.Once(b.Event("AnalogMappingQuery"), func(data any) {
 		if err := b.ReportDigital(0, 1); err != nil {
 			panic(err)
 		}
@@ -266,7 +266,7 @@ func (b *Client) DigitalWrite(pin int, value int) error {
 
 	b.pins[pin].Value = value
 
-	for i := byte(0); i < 8; i++ {
+	for i := range byte(8) {
 		if b.pins[8*port+i].Value != 0 {
 			portValue = portValue | (1 << i)
 		}
@@ -422,7 +422,7 @@ func (b *Client) process() error {
 		port := messageType & 0x0F
 		portValue := buf[0] | (buf[1] << 7)
 
-		for i := 0; i < 8; i++ {
+		for i := range 8 {
 			pinNumber := int((8*port + byte(i)))
 			if len(b.pins) > pinNumber {
 				if b.pins[pinNumber].Mode == Input {

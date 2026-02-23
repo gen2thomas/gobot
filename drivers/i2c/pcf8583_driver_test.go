@@ -24,7 +24,7 @@ func initTestPCF8583WithStubbedAdaptor() (*PCF8583Driver, *i2cTestAdaptor) {
 }
 
 func TestNewPCF8583Driver(t *testing.T) {
-	var di interface{} = NewPCF8583Driver(newI2cTestAdaptor())
+	var di any = NewPCF8583Driver(newI2cTestAdaptor())
 	d, ok := di.(*PCF8583Driver)
 	if !ok {
 		require.Fail(t, "NewPCF8583Driver() should have returned a *PCF8583Driver")
@@ -70,9 +70,9 @@ func TestPCF8583CommandsWriteTime(t *testing.T) {
 		return len(b), nil
 	}
 	// act
-	result := d.Command("WriteTime")(map[string]interface{}{"val": time.Now()})
+	result := d.Command("WriteTime")(map[string]any{"val": time.Now()})
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCF8583CommandsReadTime(t *testing.T) {
@@ -98,16 +98,16 @@ func TestPCF8583CommandsReadTime(t *testing.T) {
 	a.i2cReadImpl = func(b []byte) (int, error) {
 		numCallsRead++
 		rr := returnRead[numCallsRead-1]
-		for i := 0; i < len(b); i++ {
+		for i := range b {
 			b[i] = rr[i]
 		}
 		return len(b), nil
 	}
 	// act
-	result := d.Command("ReadTime")(map[string]interface{}{})
+	result := d.Command("ReadTime")(map[string]any{})
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.Equal(t, want, result.(map[string]interface{})["val"])
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.Equal(t, want, result.(map[string]any)["val"])
 }
 
 func TestPCF8583CommandsWriteCounter(t *testing.T) {
@@ -126,9 +126,9 @@ func TestPCF8583CommandsWriteCounter(t *testing.T) {
 		return len(b), nil
 	}
 	// act
-	result := d.Command("WriteCounter")(map[string]interface{}{"val": int32(123456)})
+	result := d.Command("WriteCounter")(map[string]any{"val": int32(123456)})
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCF8583CommandsReadCounter(t *testing.T) {
@@ -149,42 +149,42 @@ func TestPCF8583CommandsReadCounter(t *testing.T) {
 	a.i2cReadImpl = func(b []byte) (int, error) {
 		numCallsRead++
 		rr := returnRead[numCallsRead-1]
-		for i := 0; i < len(b); i++ {
+		for i := range b {
 			b[i] = rr[i]
 		}
 		return len(b), nil
 	}
 	// act
-	result := d.Command("ReadCounter")(map[string]interface{}{})
+	result := d.Command("ReadCounter")(map[string]any{})
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.Equal(t, want, result.(map[string]interface{})["val"])
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.Equal(t, want, result.(map[string]any)["val"])
 }
 
 func TestPCF8583CommandsWriteRAM(t *testing.T) {
 	// arrange
 	d, _ := initTestPCF8583WithStubbedAdaptor()
-	addressValue := map[string]interface{}{
+	addressValue := map[string]any{
 		"address": uint8(0x12),
 		"val":     uint8(0x45),
 	}
 	// act
 	result := d.Command("WriteRAM")(addressValue)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
+	assert.Nil(t, result.(map[string]any)["err"])
 }
 
 func TestPCF8583CommandsReadRAM(t *testing.T) {
 	// arrange
 	d, _ := initTestPCF8583WithStubbedAdaptor()
-	address := map[string]interface{}{
+	address := map[string]any{
 		"address": uint8(0x34),
 	}
 	// act
 	result := d.Command("ReadRAM")(address)
 	// assert
-	assert.Nil(t, result.(map[string]interface{})["err"])
-	assert.Equal(t, uint8(0), result.(map[string]interface{})["val"])
+	assert.Nil(t, result.(map[string]any)["err"])
+	assert.Equal(t, uint8(0), result.(map[string]any)["val"])
 }
 
 func TestPCF8583WriteTime(t *testing.T) {
@@ -296,7 +296,7 @@ func TestPCF8583ReadTime(t *testing.T) {
 	a.i2cReadImpl = func(b []byte) (int, error) {
 		numCallsRead++
 		rr := returnRead[numCallsRead-1]
-		for i := 0; i < len(b); i++ {
+		for i := range b {
 			b[i] = rr[i]
 		}
 		return len(b), nil
@@ -434,7 +434,7 @@ func TestPCF8583ReadCounter(t *testing.T) {
 	a.i2cReadImpl = func(b []byte) (int, error) {
 		numCallsRead++
 		rr := returnRead[numCallsRead-1]
-		for i := 0; i < len(b); i++ {
+		for i := range b {
 			b[i] = rr[i]
 		}
 		return len(b), nil

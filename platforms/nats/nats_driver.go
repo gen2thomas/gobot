@@ -66,7 +66,7 @@ func (m *Driver) Topic() string { return m.topic }
 func (m *Driver) SetTopic(topic string) { m.topic = topic }
 
 // Publish a message to the current device topic
-func (m *Driver) Publish(data interface{}) bool {
+func (m *Driver) Publish(data any) bool {
 	//nolint:forcetypeassert // ok here
 	message := data.([]byte)
 	return m.adaptor().Publish(m.topic, message)

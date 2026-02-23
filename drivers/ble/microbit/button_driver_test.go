@@ -46,7 +46,7 @@ func TestButtonReadData(t *testing.T) {
 	d := NewButtonDriver(a)
 	require.NoError(t, d.Start())
 
-	err := d.On("buttonB", func(data interface{}) {
+	err := d.On("buttonB", func(data any) {
 		sem <- true
 	})
 	require.NoError(t, err)
